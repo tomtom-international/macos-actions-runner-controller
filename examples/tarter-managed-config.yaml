@@ -1,0 +1,7 @@
+nodeCapacity:
+  cpu: 4
+  memory: 8192
+  maxActiveRunners: 2
+controller:
+  server: http://localhost:8043
+  apiVersionPath: /api/v1

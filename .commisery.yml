@@ -1,0 +1,4 @@
+max-subject-length: 120
+disable:
+  - C019
+  - C003

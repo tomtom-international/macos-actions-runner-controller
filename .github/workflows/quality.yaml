@@ -1,0 +1,55 @@
+# Copyright (C) 2023 TomTom NV. All rights reserved.
+---
+name: Quality Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  conventional-commit:
+    name: Conventional Commit Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tomtom-international/commisery-action@v3
+        with:
+          token: ${{ github.token }}
+          config: .commisery.yml
+
+  check-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR Title
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = context.payload.pull_request.title;
+
+            const validPrefixes = /^(ci:|feat:|fix:|chore:)/;
+            if (!validPrefixes.test(title)) {
+                core.setFailed('PR title must start with "ci:", "feat:", "fix:", or "chore:".');
+                return;
+            }
+
+  # Require status checks to pass before merging
+  validate:
+    needs:
+      - conventional-commit
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Passed all Quality checks"

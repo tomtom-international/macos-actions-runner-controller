@@ -1,0 +1,53 @@
+nodeCapacity:
+  cpu: 4
+  memory: 8192
+  maxActiveRunners: 2
+runners:
+  - name: runner0
+    cpu: 2
+    memory: 4096
+    baseImage: sonoma-base
+    restartOnFailure: false
+    noGraphics: true        # optional
+    cacheVolumePath: ""     # optional
+    releaseVersion: 1.0.0
+    runnerGroup: group0
+    startupProbe:           # optional
+      githubRunnerGet: {}
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      successThreshold: 2
+      failureThreshold: 5
+    softnetNetwork:
+      enable: true
+      allowCIDRs: 
+        - 192.168.0.1/24
+    labels:
+      - label0
+      - label1
+    hosts:                  # optional
+      - ip: 127.0.0.1
+        hostnames:
+          - example.com
+          - example.net
+  - name: runner1
+    cpu: 4
+    memory: 8192
+    baseImage: sonoma-base
+    restartOnFailure: false # optional
+    noGraphics: true        # optional
+    cacheVolumePath: ""     # optional
+    releaseVersion: 1.0.0
+    runnerGroup: group0
+    startupProbe:           # optional
+      githubRunnerGet: {}
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      successThreshold: 2
+      failureThreshold: 5
+    softnetNetwork:
+      enable: false
+    labels:
+      - label0
+      - label1
+    hosts: []               # optional

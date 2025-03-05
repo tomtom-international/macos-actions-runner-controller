@@ -1,0 +1,453 @@
+package controller
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
+	np "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/nodepool"
+	r "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/runners"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/server"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
+	"net"
+	"time"
+)
+
+type Controller struct {
+	EtcdClient             *etcd.EtcdClient
+	nodePoolManager        *np.Manager
+	sqsRunnerRequestClient *sqs.SQSClient
+	runnerManager          *r.Manager
+	runnerUpdateCn         chan types.Runner
+}
+
+func NewController(configuration config.ControllerConfig) (*Controller, error) {
+	etcdClient, err := etcd.NewEtcdClient(
+		configuration.EtcdEndpoints, func(err error) {
+			logger.Errorf("Etcd Error: %v", err)
+		})
+	sqsClient, err := sqs.NewClient(configuration.AwsRegion, configuration.AwsRunnerRequestSQSUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Controller{
+		EtcdClient:             etcdClient,
+		sqsRunnerRequestClient: sqsClient,
+		runnerUpdateCn:         make(chan types.Runner, 100),
+		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease),
+		runnerManager:          r.NewManager(etcdClient, config.EtcdRunnersKey),
+	}, nil
+}
+
+func (c *Controller) ListenAndServe(configuration config.ControllerConfig) {
+	address := net.ParseIP(configuration.Address)
+	port := configuration.Port
+	server.ListenAndServeControllerServer(c, address, port)
+}
+
+func (c *Controller) RunWithContext(ctx context.Context) {
+	// TODO: At launch, read all nodes from etcd and start node heartbeat watchers
+	// TODO: At launch, read all runners from etcd and start runner create watchers
+	go c.listenForNewRunners(ctx, c.createRunner)
+
+	go c.checkRegisteredNodes()
+
+	scheduler := newScheduler(c.nodePoolManager, c.runnerManager)
+	go scheduler.startScheduler(ctx)
+}
+
+func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (types.NodeRegistrationStatus, *types.Node, error) {
+	existingNode, err := c.nodePoolManager.GetNodeByName(request.NodeName)
+
+	// TODO: Validate node registration request. Check node capacity and node info.
+
+	if err != nil {
+		logger.Errorf("Failed to get node by name %s, error: %v", request.NodeName, err)
+		return types.RegistrationError, existingNode, err
+	}
+	if existingNode != nil {
+		if existingNode.Status.Condition.Status == types.Disabled {
+			logger.Warnf("Recieved node registration request for disabled node %s.", request.NodeName)
+			return types.NodeDisabled, existingNode, fmt.Errorf("node %s disabled", request.NodeName)
+		}
+		if existingNode.Status.Condition.Status == types.Deregistered {
+			logger.Warnf("Recieved node registration request for deregistered node %s. Decline node registration", request.NodeName)
+			return types.NodeDeregistered, existingNode, fmt.Errorf("node %s is deregistered. Waiting to be removed", request.NodeName)
+		} else {
+			logger.Warnf("Recieved node registration request for active node %s", request.NodeName)
+			c.nodePoolManager.AddNodeHeartbeatWatcher(existingNode.ID)
+			return types.NodeAlreadyExists, existingNode, fmt.Errorf("node %s already registered", request.NodeName)
+		}
+	}
+
+	nodeID := utils.NewUUID()
+	newNode := types.Node{
+		Name: request.NodeName,
+		ID:   nodeID,
+		Status: types.Status{
+			Capacity: request.Capacity,
+			Condition: types.Condition{
+				Status:  types.NotReady,
+				Healthy: false,
+				Message: "Node registration successful",
+			},
+		},
+		RegistrationTimestamp: time.Now(),
+		NodeInfo:              request.NodeInfo,
+	}
+	err = c.nodePoolManager.SaveNode(newNode)
+	if err != nil {
+		logger.Errorf("Failed to save node %s, error: %v", request.NodeName, err)
+		return types.RegistrationError, nil, err
+	}
+	logger.Infof("Node %s with id %s registered successfully", request.NodeName, nodeID)
+	c.nodePoolManager.AddNodeHeartbeatWatcher(nodeID)
+	return types.Registered, &newNode, nil
+}
+
+func (c *Controller) ProcessNodeHeartBeat(nodeID utils.UID, heartbeat types.NodeHeartbeatRequest) (types.NodeHeartbeatStatus, *types.Node, error) {
+	// check by Node ID if node exists in etcd
+	registeredNode, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node with id %s, error: %v", nodeID, err)
+		return types.HeartbeatFailed, nil, err
+	}
+	if registeredNode == nil {
+		logger.Errorf("Recieved heartbeat for non-existing Node %s", nodeID)
+		return types.HeartbeatNodeNotFound, nil, nil
+	}
+
+	if !c.nodePoolManager.IsHeartbeatWatching(nodeID) {
+		c.nodePoolManager.AddNodeHeartbeatWatcher(registeredNode.ID)
+	}
+
+	// TODO: Validations
+	// Validate allocatable resources < capacity resources
+	// If node not found -> return error to register node
+	// if name != registeredNode.Name  return error ?? maybe re register node with new name if it active or not
+
+	if registeredNode.Status.Condition.Status == types.Deregistered {
+		return types.HeartbeatDeregisteredNode, nil, fmt.Errorf("node %s deregistered", registeredNode.Name)
+	}
+
+	if registeredNode.Status.Condition.Status != types.Disabled {
+		registeredNode.Status.Condition.LastTransitionTime = time.Now()
+		if heartbeat.Status != types.Ready {
+			registeredNode.Status.Condition.Status = types.NotReady
+			registeredNode.Status.Condition.Message = heartbeat.Message
+		} else {
+			registeredNode.Status.Condition.Status = types.Ready
+			registeredNode.Status.Condition.Message = "Node is ready"
+		}
+	}
+
+	registeredNode.Status.Allocatable = heartbeat.Allocatable
+	registeredNode.Status.Condition.LastHeartbeatTime = time.Now()
+	registeredNode.Status.Condition.Healthy = true
+
+	err = c.nodePoolManager.SaveNode(*registeredNode)
+	if err != nil {
+		logger.Errorf("Failed to save node %s, error: %v", registeredNode.Name, err)
+		return types.HeartbeatFailed, nil, err
+	}
+	return types.HeartbeatSuccess, registeredNode, nil
+}
+
+func (c *Controller) DeregisterNode(nodeID utils.UID) (*types.Node, error) {
+	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
+		return nil, err
+	}
+
+	if node != nil {
+		if node.Status.Condition.Status == types.Ready {
+			return node, fmt.Errorf("node %s is active", node.Name)
+		} else {
+			node.Status.Condition.Status = types.Deregistered
+			node.Status.Condition.Message = "Node deregistered"
+			node.Status.Condition.LastTransitionTime = time.Now()
+			// TODO: Set lease on deregistered node
+			err = c.nodePoolManager.SaveNode(*node)
+			if err != nil {
+				logger.Errorf("Failed to deregister node %s, error: %v", node.Name, err)
+				return nil, err
+			}
+		}
+	}
+	return node, nil
+}
+
+func (c *Controller) GetNodeInfo(nodeID utils.UID) (*types.Node, error) {
+	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
+		return nil, err
+	}
+	return node, nil
+
+}
+
+func (c *Controller) GetNodeList() ([]types.Node, error) {
+	nodeList, err := c.nodePoolManager.GetNodePool()
+	if err != nil {
+		logger.Errorf("Failed to get node list, error: %v", err)
+		return nil, err
+	}
+	return nodeList, nil
+}
+
+func (c *Controller) DisableNode(nodeID utils.UID) (*types.Node, error) {
+	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
+		return nil, err
+	}
+	if node != nil {
+		if node.Status.Condition.Status == types.Deregistered || node.Status.Condition.Status == types.Disabled {
+			return node, fmt.Errorf("node %s already in %s status", node.Name, node.Status.Condition.Status)
+		}
+		node.Status.Condition.Status = types.Disabled
+		node.Status.Condition.Message = "Node disabled for placing new runners"
+		node.Status.Condition.LastTransitionTime = time.Now()
+		err = c.nodePoolManager.SaveNodeWithLease(*node)
+		if err != nil {
+			logger.Errorf("Failed to disable node %s, error: %v", node.Name, err)
+			return nil, err
+		}
+	}
+	return node, nil
+
+}
+
+func (c *Controller) ReEnable(nodeID utils.UID) (*types.Node, error) {
+	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
+		return nil, err
+	}
+	if node != nil {
+		if node.Status.Condition.Status != types.Disabled {
+			return node, fmt.Errorf("node %s in %s status. Enabling only disabled nodes", node.Name, node.Status.Condition.Status)
+		}
+		node.Status.Condition.Status = types.NotReady
+		node.Status.Condition.Message = "Node re-enabled"
+		node.Status.Condition.LastTransitionTime = time.Now()
+		err = c.nodePoolManager.SaveNode(*node)
+		if err != nil {
+			logger.Errorf("Failed to enable node %s, error: %v", node.Name, err)
+			return nil, err
+		}
+	}
+	return node, nil
+
+}
+
+func (c *Controller) RemoveNodesWatcherHandler(conn *websocket.Conn) {
+	c.nodePoolManager.RemoveNodesWatcherHandler(conn)
+}
+
+func (c *Controller) AddNodesWatcher(conn *websocket.Conn, notificationChan chan types.WatcherNodesUpdate) {
+	c.nodePoolManager.AddNodesWatcher(conn, notificationChan)
+}
+
+func (c *Controller) UpdateDefaultRunnerConfig(runnerConfig types.RunnerConfig) error {
+	// TODO: implement config update
+	// 1) validate runner config
+	// 2) save runner config to etcd
+	return nil
+}
+
+func (c *Controller) createRunner(runner *types.Runner) error {
+	logger.Debugf("Creating runner with labels %+v", runner.Config.RunnerLabels)
+	// Check if create runner request was already handled and runner is already created
+	// to avoid duplicate runners
+	if runner.Condition.CreateRequestID == "" {
+		return fmt.Errorf("create request id is empty")
+	}
+	dupRunner, _ := c.runnerManager.GetRunnerByCreateRequestID(runner.Condition.CreateRequestID)
+	if dupRunner != nil {
+		return fmt.Errorf("runner with request id %s already exists", runner.Condition.CreateRequestID)
+	}
+
+	// generate runner fields
+	runner.ID = utils.NewUUID()
+	runner.Condition.Status = types.Pending
+	runner.Condition.CreationTimestamp = time.Now()
+	logger.Debugf("Runner assigned id %s", runner.ID)
+
+	// TODO: merge runner config with default config
+
+	// save runner to etcd
+	err := c.runnerManager.SaveRunner(runner)
+	if err != nil {
+		logger.Errorf("Failed to create runner with id %s, error: %v", runner.ID, err)
+		return fmt.Errorf("failed to create runner with label %s", runner.ID)
+	}
+	logger.Debugf("Runner %s created", runner.ID)
+	return nil
+}
+
+func (c *Controller) GetRunnerInfo(runnerID utils.UID) (*types.Runner, error) {
+	runner, err := c.runnerManager.GetRunnerById(runnerID)
+	if err != nil {
+		logger.Errorf("Failed to get runner %s, error: %v", runnerID, err)
+		return nil, err
+	}
+	return runner, nil
+}
+
+func (c *Controller) GetRunnerList() ([]types.Runner, error) {
+	runners, err := c.runnerManager.GetRunners()
+	if err != nil {
+		logger.Errorf("Failed to get runners list, error: %v", err)
+		return nil, err
+	}
+	return runners, nil
+}
+
+func (c *Controller) listenForNewRunners(ctx context.Context, handlerFunc func(runner *types.Runner) error) {
+	pollForMessages(ctx, c.sqsRunnerRequestClient, handlerFunc)
+}
+
+func (c *Controller) checkRegisteredNodes() {
+	nodes, err := c.nodePoolManager.GetNodePool()
+	if err != nil {
+		logger.Errorf("Check registered nodes failed to get node pool, error: %v", err)
+		return
+	}
+
+	for _, node := range nodes {
+		if node.Status.Condition.Healthy &&
+			node.Status.Condition.LastHeartbeatTime.Add(1*time.Minute).Before(time.Now()) {
+
+			node.Status.Condition.Healthy = false
+			node.Status.Condition.Status = types.Unknown
+			node.Status.Condition.Message = "Node heartbeat timeout exceeded on initial check"
+			node.Status.Condition.LastTransitionTime = time.Now()
+
+			err = c.nodePoolManager.SaveNode(node)
+			if err != nil {
+				logger.Errorf("Check registered nodes failed to save node %s, error: %v", node.Name, err)
+				continue
+			}
+		}
+	}
+}
+
+func pollForMessages(ctx context.Context, sqsClient *sqs.SQSClient, handler func(runner *types.Runner) error) {
+	for {
+		// TODO: move 2 and 20 magic numbers to const?
+		// TODO: fix panic on context close
+		messages, err := sqsClient.ReceiveMessages(ctx, 10, 20)
+		if err != nil {
+			logger.Errorf("Failed to receive messages. Error: %v", err.Error())
+			//continue
+			panic(err)
+		}
+
+		for _, msg := range messages {
+			runner := types.Runner{}
+			logger.Debugf("Received message with id: %s from queue %s", *msg.MessageId, sqsClient.QueueURL)
+			err := json.Unmarshal([]byte(*msg.Body), &runner)
+			if err != nil {
+				// message will be sent to DLQ after maximum receives
+				logger.Errorf("Failed to unmarshal message %s from queue %v: %v", *msg.MessageId, sqsClient.QueueURL, err.Error())
+				continue
+			}
+			runner.Condition.CreateRequestID = *msg.MessageId
+
+			err = handler(&runner)
+			if err != nil {
+				continue
+			}
+
+			_, err = sqsClient.DeleteMessage(ctx, *msg.ReceiptHandle)
+			if err != nil {
+				logger.Errorf("Failed to delete message %s from queue %v: %v", *msg.MessageId, sqsClient.QueueURL, err.Error())
+				continue
+			}
+		}
+	}
+}
+
+func (c *Controller) AddRunnersWatcher(conn *websocket.Conn, notificationChan chan types.WatcherRunnersUpdate) {
+	c.runnerManager.AddRunnerWatcher(conn, notificationChan)
+}
+
+func (c *Controller) RemoveRunnersWatcherHandler(conn *websocket.Conn) {
+	c.runnerManager.RemoveRunnersWatcherHandler(conn)
+}
+
+func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate) (*types.Runner, error) {
+	logger.Debugf("Processing runner status update %+v", update)
+	runner, err := c.runnerManager.GetRunnerById(update.ID)
+	if err != nil {
+		logger.Errorf("Failed to get runner %s, error: %v", update.ID, err)
+		return nil, fmt.Errorf("failed to get runner %s", update.ID)
+	}
+	if runner == nil {
+		logger.Errorf("Runner %s not found", update.ID)
+		return nil, fmt.Errorf("runner %s not found", update.ID)
+	}
+
+	switch update.Status {
+	case types.Running:
+		logger.Debugf("Runner %s is running", runner.ID)
+		runner.GhaRunnerName = update.GhaRunnerName
+		runner.Condition.Status = update.Status
+		// update node binding
+		err = c.removeNodeBinding(runner.NodeID, runner.ID)
+		if err != nil {
+			return nil, err
+		}
+
+	case types.Failed:
+		logger.Debugf("Runner %s failed. Error: %s", runner.ID, update.Message)
+		runner.Condition.Status = update.Status
+		runner.Condition.Message = update.Message
+		// update node binding
+		err = c.removeNodeBinding(runner.NodeID, runner.ID)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		logger.Debugf("Runner %s is %s", runner.ID, runner.Condition.Status)
+		runner.Condition.Status = update.Status
+	}
+
+	err = c.runnerManager.SaveRunner(runner)
+	if err != nil {
+		logger.Errorf("Failed to save runner %s, error: %v", runner.ID, err)
+		return nil, fmt.Errorf("failed to save runner %s", runner.ID)
+	}
+
+	return runner, nil
+}
+
+func (c *Controller) removeNodeBinding(nodeID, runnerID utils.UID) error {
+	logger.Debugf("Removing runner binding from node %s", nodeID)
+	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	if err != nil {
+		logger.Errorf("Failed to get node %s runner assign to, error: %v", nodeID, err)
+		return fmt.Errorf("failed to get node %s runner assign to", nodeID)
+	}
+	for i, binding := range node.Status.Binding {
+		if binding.RunnerID == runnerID {
+			node.Status.Binding = append(node.Status.Binding[:i], node.Status.Binding[i+1:]...)
+			break
+		}
+	}
+	err = c.nodePoolManager.SaveNode(*node)
+	if err != nil {
+		logger.Errorf("Failed to update node %s binding, error: %v", node.ID, err)
+		return fmt.Errorf("failed to update node %s binding", node.ID)
+	}
+	return nil
+}

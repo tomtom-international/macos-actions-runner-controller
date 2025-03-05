@@ -1,0 +1,10 @@
+name: macos-14-8cpu
+cpu: 4
+memory: 4096
+baseImage: sonoma-xcode-16
+startupProbe:
+  githubRunnerGet: {}
+  initialDelaySeconds: 30
+  periodSeconds: 20
+  successThreshold: 1
+  failureThreshold: 3
