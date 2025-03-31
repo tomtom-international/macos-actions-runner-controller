@@ -18,7 +18,7 @@ package config
 
 import (
 	"github.com/caarlos0/env"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/secretsmanager"
+	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	u "github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
@@ -31,15 +31,18 @@ const (
 type TarterMode string
 
 type TarterConfig struct {
-	LogDebug           bool   `env:"LOG_DEBUG" envDefault:"false"`
-	LogCaller          bool   `env:"LOG_CALLER" envDefault:"false"`
-	LogStacktrace      bool   `env:"LOG_STACKTRACE" envDefault:"false"`
-	Port               string `env:"PORT" envDefault:"8041"`
-	Mode               string `env:"TARTER_MODE"`
-	ConfigFolder       string `env:"TARTER_CONFIG_PATH" envDefault:"/opt/tarter/config"`
-	TartPath           string `env:"TART_PATH" envDefault:"/opt/homebrew/bin/tart"`
-	AwsRegion          string `env:"AWS_REGION" envDefault:"eu-west-1"`
-	AwsSecretGitHubApp string `env:"AWS_SM_GH_APP" envDefault:"stage/gha/github-app"`
+	LogDebug            bool   `env:"LOG_DEBUG" envDefault:"false"`
+	LogCaller           bool   `env:"LOG_CALLER" envDefault:"false"`
+	LogStacktrace       bool   `env:"LOG_STACKTRACE" envDefault:"false"`
+	Port                string `env:"PORT" envDefault:"8041"`
+	Mode                string `env:"TARTER_MODE"`
+	ConfigFolder        string `env:"TARTER_CONFIG_PATH" envDefault:"/opt/tarter/config"`
+	TartPath            string `env:"TART_PATH" envDefault:"/opt/homebrew/bin/tart"`
+	GhAppId             int    `env:"GH_APP_ID"`
+	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
+	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
+	GhAppPrivateKeyFile string `env:"GH_APP_PRIVATE_KEY_FILE" envDefault:"/opt/tarter/config/.gh_app_private_key.pem"`
+	GhAppOrg            string `env:"GH_APP_ORG"`
 }
 
 type Config interface {
@@ -69,10 +72,12 @@ func LoadTarterConfiguration(c *TarterConfig) error {
 	return nil
 }
 
-func InitSecretManager(c *TarterConfig) (*secretsmanager.SCM, error) {
-	smc, err := secretsmanager.New(c.AwsRegion)
-	if err != nil {
-		return nil, err
+func GetGithubClientConfig(c *TarterConfig) (ghConfig ghclient.ClientConfig) {
+	return ghclient.ClientConfig{
+		AppID:          int64(c.GhAppId),
+		InstallationID: int64(c.GhAppInstallationID),
+		PrivateKey:     []byte(c.GhAppPrivateKey),
+		PrivateKeyFile: c.GhAppPrivateKeyFile,
+		Organization:   c.GhAppOrg,
 	}
-	return smc, nil
 }
