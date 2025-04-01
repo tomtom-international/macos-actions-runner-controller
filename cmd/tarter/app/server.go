@@ -69,7 +69,7 @@ func NewTarterCommand() *cobra.Command {
 			logger.InitLogger(tarterConfig.LogDebug, tarterConfig.LogCaller, tarterConfig.LogStacktrace)
 			t, r, err := NewTarter()
 			if err != nil {
-				logger.Fatalf("Error creating Tarter application: %s", err.Error())
+				logger.Fatalf("Error creating Tarter application: ", err.Error())
 			}
 
 			logger.Infof("Server running on %s", tarterConfig.Port)

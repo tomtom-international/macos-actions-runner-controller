@@ -93,7 +93,7 @@ func NewTarter(tarterConfig config.TarterConfig,
 	ghConfig := config.GetGithubClientConfig(&tarterConfig)
 	githubClient, err := ghclient.New(ghConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initiate GitHub client: %v", err.Error())
+		return nil, fmt.Errorf("failed to initiate GitHub client, %v", err.Error())
 	}
 
 	tartClient := tart.NewClient(
