@@ -19,10 +19,12 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
+	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"os"
 	"os/signal"
@@ -34,13 +36,14 @@ var (
 )
 
 func NewControllerCommand() *cobra.Command {
-	// TODO: add description
-	// TODO: add version flag
 	// TODO: check Etcd Connectivity
 	cmd := &cobra.Command{
 		Use:   "controller",
-		Short: "The Controller ...",
+		Short: "The MacOS Actions Runner Controller is a controller for autoscaling self-hosted GitHub Actions runners on macOS systems.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Name() == "version" {
+				return nil
+			}
 			err := config.LoadConfiguration(&configuration)
 			if err != nil {
 				return errors.New("error: failed to load Controller configuration. " + err.Error())
@@ -58,6 +61,17 @@ func NewControllerCommand() *cobra.Command {
 			Run(c)
 		},
 	}
+
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version of MacOS Actions Runner Controller",
+		Run: func(cmd *cobra.Command, args []string) {
+			info := coreVersion.GetVersionInfo()
+			fmt.Printf("Version: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
+		},
+	}
+	cmd.AddCommand(versionCmd)
+
 	return cmd
 }
 

@@ -40,7 +40,7 @@ var (
 func NewTarterCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tarter",
-		Short: "Tarter is a service that manages the lifecycle of Tart runners",
+		Short: "Tarter is a service that manages the lifecycle of Tart VMs",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Name() == "version" {
 				return nil
