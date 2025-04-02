@@ -1,6 +1,7 @@
 module github.com/tomtom-international/macos-actions-runner-controller
 
-go 1.22
+go 1.24.0
+
 toolchain go1.24.1
 
 require (
