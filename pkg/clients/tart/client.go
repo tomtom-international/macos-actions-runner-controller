@@ -91,7 +91,7 @@ func (c *Client) BuildCMDArguments(tartVMName string, config types.RunnerConfig)
 	}
 
 	if !config.DisableRootDiskOptions {
-		args = append(args, fmt.Sprintf("--root-disk-opts=sync=none,caching=cached"))
+		args = append(args, "--root-disk-opts=sync=none,caching=cached")
 	}
 	args = append(args, fmt.Sprintf("--dir=config:%v:ro", path.Join(c.configFolder, tartVMName)))
 	args = append(args, tartVMName)
@@ -292,7 +292,7 @@ func writeToFile(filePath string, data string) error {
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-
+			return
 		}
 	}(f)
 	return nil

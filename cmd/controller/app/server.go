@@ -94,7 +94,7 @@ func Run(c *controller.Controller) {
 		logger.Debugf("Closing etcd client")
 		err := EtcdClient.Close()
 		if err != nil {
-			logger.Fatalf(err)
+			logger.Fatalf("%v", err)
 		}
 	}(c.EtcdClient)
 

@@ -65,8 +65,9 @@ func NewRESTClient(host string, pathPrefix string, contentType string, client *h
 	baseURL.Fragment = ""
 
 	return &RESTClient{
-		baseURL: baseURL,
-		Client:  client,
+		baseURL:     baseURL,
+		Client:      client,
+		contentType: contentType,
 	}, nil
 }
 

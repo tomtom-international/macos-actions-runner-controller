@@ -33,7 +33,10 @@ func MethodNotAllowedHandler() http.HandlerFunc {
 			Message: "The method not allowed.",
 		}
 
-		json.NewEncoder(w).Encode(response)
+		err := json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -47,7 +50,10 @@ func NotFoundHandler() http.HandlerFunc {
 			Message: "Page not found.",
 		}
 
-		json.NewEncoder(w).Encode(response)
+		err := json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }
 

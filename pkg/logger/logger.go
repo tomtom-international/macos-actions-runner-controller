@@ -73,6 +73,6 @@ func Warnf(format string, args ...interface{}) {
 	logging.Warn(fmt.Sprintf(format, args...))
 }
 
-func Fatalf(args ...interface{}) {
-	logging.Fatal(fmt.Sprint(args...))
+func Fatalf(format string, args ...interface{}) {
+	logging.Fatal(fmt.Sprintf(format, args...))
 }

@@ -32,6 +32,9 @@ func HealthCheckHandler() http.HandlerFunc {
 			Message: "Healthy",
 		}
 
-		json.NewEncoder(w).Encode(response)
+		err := json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }

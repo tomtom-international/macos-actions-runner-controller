@@ -24,6 +24,7 @@ import (
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
+	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
@@ -59,18 +60,18 @@ type hookConfig struct {
 
 func loadHookConfiguration() {
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("error: failed to load configuration. " + err.Error())
+		log.Fatalf("error: failed to load configuration. %s", err.Error())
 	}
 }
 
 func readRunnerConfig() {
 	data, err := os.ReadFile(cfg.RunnerConfigFile)
 	if err != nil {
-		log.Fatalf("error: failed to read runner configuration. " + err.Error())
+		log.Fatalf("error: failed to read runner configuration. %s", err.Error())
 	}
 	err = yaml.Unmarshal(data, &runnerConfig)
 	if err != nil {
-		log.Fatalf("error: failed to unmarshal runner configuration. " + err.Error())
+		log.Fatalf("error: failed to unmarshal runner configuration. %s", err.Error())
 	}
 }
 
@@ -84,11 +85,13 @@ func initGithubClient() {
 	var err error
 	githubClient, err = ghclient.New(ghConfig)
 	if err != nil {
-		log.Fatalf("Failed to create github client: %v", err)
+		log.Fatalf("Failed to create github client: %s", err.Error())
 	}
 }
 
 func main() {
+	info := coreVersion.GetVersionInfo()
+	log.Printf("Version: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
 	log.Println("Reading configuration")
 	loadHookConfiguration()
 	readRunnerConfig()
