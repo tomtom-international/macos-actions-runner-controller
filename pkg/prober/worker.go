@@ -114,7 +114,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 		targetState, ok := w.probeManager.stateManager.GetRunnerState(w.probeTarget.ID)
 		if !ok {
 			// Either the target has not been created yet, or it was already deleted.
-			logger.Infof("No status for %s target with %d id and name %s",
+			logger.Infof("No status for %s target with %s id and name %s",
 				w.probeTarget.Type, w.probeTarget.ID, w.probeTarget.Name)
 			return true
 		}

@@ -49,10 +49,16 @@ func GetNodeListHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to list nodes: %v", err.Error()),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -68,7 +74,10 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 				RegistrationStatus: types.RegistrationError,
 				Message:            "Failed to read registration request",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		status, node, err := c.RegisterNewNode(nodeRegistration)
@@ -79,7 +88,10 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 					RegistrationStatus: status,
 					Message:            fmt.Sprintf("Failed to register node %s", node.Name),
 				}
-				json.NewEncoder(w).Encode(response)
+				err := json.NewEncoder(w).Encode(response)
+				if err != nil {
+					return
+				}
 				return
 			} else {
 				w.WriteHeader(http.StatusConflict)
@@ -88,7 +100,10 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 					Node:               *node,
 					Message:            fmt.Sprintf("Node %s already registered or deregistered for scheduling", node.Name),
 				}
-				json.NewEncoder(w).Encode(response)
+				err := json.NewEncoder(w).Encode(response)
+				if err != nil {
+					return
+				}
 				return
 			}
 		}
@@ -99,7 +114,10 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 			Node:               *node,
 			Message:            fmt.Sprintf("Node %s registered with id %s", node.Name, node.ID),
 		}
-		json.NewEncoder(w).Encode(response)
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -115,7 +133,10 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Node id is required",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 
@@ -131,7 +152,10 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 					Status:  http.StatusNotFound,
 					Message: fmt.Sprintf("Node %s not found", nodeID),
 				}
-				json.NewEncoder(w).Encode(response)
+				err := json.NewEncoder(w).Encode(response)
+				if err != nil {
+					return
+				}
 				return
 			}
 			resp, err = json.Marshal(node)
@@ -143,10 +167,16 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to get node: %v", err.Error()),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -162,7 +192,10 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Node id is required",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 
@@ -174,7 +207,10 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Failed to read node heartbeat request",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		status, node, err := c.ProcessNodeHeartBeat(nodeID, body)
@@ -185,7 +221,10 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 					Status:  http.StatusNotAcceptable,
 					Message: fmt.Sprintf("Node %s disabled for scheduling", nodeID),
 				}
-				json.NewEncoder(w).Encode(response)
+				err := json.NewEncoder(w).Encode(response)
+				if err != nil {
+					return
+				}
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)
@@ -193,7 +232,10 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to process node heartBeat: %v", err.Error()),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		if status == types.HeartbeatNodeNotFound {
@@ -202,12 +244,17 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Node %s not found", nodeID),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 
-		json.NewEncoder(w).Encode(node)
-		return
+		err = json.NewEncoder(w).Encode(node)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -223,7 +270,10 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 				Status:  http.StatusBadRequest,
 				Message: "Node id is required",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 
@@ -245,7 +295,10 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Node %s not found", nodeID),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		if err != nil {
@@ -254,14 +307,19 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		response := core.SimpleResponse{
 			Status:  http.StatusOK,
 			Message: fmt.Sprintf("Node %s disabled", nodeID),
 		}
-		json.NewEncoder(w).Encode(response)
-		return
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }

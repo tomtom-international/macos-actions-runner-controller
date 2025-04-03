@@ -35,10 +35,16 @@ func GetStandaloneConfigHandler(t *tarter.Tarter) http.HandlerFunc {
 				Message: fmt.Sprintf("Failed to marshal standalone config: %v", err),
 			}
 
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -50,6 +56,9 @@ func RestartStandaloneRunnersHandler(t *tarter.Tarter) http.HandlerFunc {
 		response := core.SimpleResponse{
 			Message: "Standalone config restarted",
 		}
-		json.NewEncoder(w).Encode(response)
+		err := json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }

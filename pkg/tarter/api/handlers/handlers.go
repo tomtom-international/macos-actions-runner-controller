@@ -46,10 +46,16 @@ func ListRunnersHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runners from state: %v", err),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -64,7 +70,10 @@ func GetRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Runner id is required.",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		runner, exists := sm.GetRunnerState(runnerID)
@@ -74,7 +83,10 @@ func GetRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("The runner with id %v not found.", runnerID),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		resp, err := json.Marshal(runner)
@@ -84,10 +96,16 @@ func GetRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runner from state: %v", err),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -102,7 +120,10 @@ func StopRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Runner id is required.",
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 		exists := sm.StopRunner(runnerID)
@@ -112,13 +133,19 @@ func StopRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: fmt.Sprintf("The runner with id %v not found.", runnerID),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
 
 		response := core.SimpleResponse{
 			Message: fmt.Sprintf("Runner with id %v is stopping", runnerID),
 		}
-		json.NewEncoder(w).Encode(response)
+		err := json.NewEncoder(w).Encode(response)
+		if err != nil {
+			return
+		}
 	}
 }

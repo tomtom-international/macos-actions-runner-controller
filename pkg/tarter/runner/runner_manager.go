@@ -138,7 +138,7 @@ func (m *RunnerManager) ListWorkers() []string {
 	m.workerLock.RLock()
 	defer m.workerLock.RUnlock()
 	workers := make([]string, 0, len(m.workers))
-	for k, _ := range m.workers {
+	for k := range m.workers {
 		workers = append(workers, string(k.runnerID))
 	}
 	return workers

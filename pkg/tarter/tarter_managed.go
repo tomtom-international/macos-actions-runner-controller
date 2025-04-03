@@ -36,13 +36,13 @@ func (t *Tarter) StartManagedTarter() {
 	}
 	controllerClient, err := controller.NewClient(t.config.GetControllerConfig())
 	if err != nil {
-		logger.Fatalf("Failed to create controller client: %v", err.Error())
+		logger.Fatalf("Failed to create controller client: %s", err.Error())
 	}
 	t.controllerClient = controllerClient
 
 	nodeInfo, err := t.getNodeInfo()
 	if err != nil {
-		logger.Fatalf("Failed to get node info: %v", err.Error())
+		logger.Fatalf("Failed to get node info: %s", err.Error())
 	}
 	nodeCapacity := types.Resources{
 		Cpu:     t.config.GetNodeCapacity().Cpu,

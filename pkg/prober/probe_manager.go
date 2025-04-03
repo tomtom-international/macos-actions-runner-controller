@@ -78,7 +78,7 @@ func (m *ProberManager) AddProber(target *pt.ProbeTarget) {
 		targetKey.probeType = pt.Startup
 		logger.Debugf("Starting %v probe for target %v ...", targetKey.probeType.String(), targetKey.targetID)
 		if _, ok := m.workers[targetKey]; ok {
-			logger.Errorf("Startup probe already exists for target: id - %d, name - %s", target.ID, target.Name)
+			logger.Errorf("Startup probe already exists for target: id - %s, name - %s", target.ID, target.Name)
 			return
 		}
 		w := newWorker(m, pt.Startup, target, m.startupManager)
@@ -90,7 +90,7 @@ func (m *ProberManager) AddProber(target *pt.ProbeTarget) {
 		targetKey.probeType = pt.Liveness
 		logger.Debugf("Starting %v probe for target %v ...", targetKey.probeType.String(), targetKey.targetID)
 		if _, ok := m.workers[targetKey]; ok {
-			logger.Errorf("Liveness probe already exists for target: id - %d, name - %s", target.ID, target.Name)
+			logger.Errorf("Liveness probe already exists for target: id - %s, name - %s", target.ID, target.Name)
 			return
 		}
 		w := newWorker(m, pt.Liveness, target, m.livenessManager)

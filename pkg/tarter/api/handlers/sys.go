@@ -35,9 +35,15 @@ func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runner workers: %v", err),
 			}
-			json.NewEncoder(w).Encode(response)
+			err := json.NewEncoder(w).Encode(response)
+			if err != nil {
+				return
+			}
 			return
 		}
-		w.Write(resp)
+		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
 	}
 }
