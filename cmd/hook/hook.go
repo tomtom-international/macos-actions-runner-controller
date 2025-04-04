@@ -91,7 +91,7 @@ func initGithubClient() {
 
 func main() {
 	info := coreVersion.GetVersionInfo()
-	log.Printf("Version: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
+	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
 	log.Println("Reading configuration")
 	loadHookConfiguration()
 	readRunnerConfig()
