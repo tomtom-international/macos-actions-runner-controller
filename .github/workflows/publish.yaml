@@ -1,0 +1,40 @@
+name: Publish
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-macos-actions-runner-tarter:
+    name: Build and Release Tarter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Set version from release
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Build tarter release artifacts
+        run: make release-tarter VERSION=${{ env.VERSION }}
+
+      - name: Upload Tarter Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          tag_name: ${{ github.event.release.tag_name }}
+          append_body: true

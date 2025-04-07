@@ -2,6 +2,7 @@ IMAGE_REPO ?=
 VERSION ?= 0.0.0
 COMMIT_SHA = $(shell git rev-parse HEAD)
 BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+TARTER_PLATFORMS ?= linux/amd64 linux/arm64 darwin/arm64
 
 GO_BUILD_LDFLAGS = "-s -w -X github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version.Version=${VERSION} -X github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version.BuildDate=${BUILD_DATE} -X github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version.GitCommit=${COMMIT_SHA}"
 
@@ -18,7 +19,7 @@ else
 	export PUSH_ARG="--push"
 endif
 
-all: build-controller build-tarter build-hook
+build: build-controller build-tarter build-hook
 
 build-controller:
 	@echo "Building controller"
@@ -55,7 +56,7 @@ docker-buildx:
 	@if ! docker buildx ls | grep -q container-builder; then\
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
-	
+
 docker-hook:
 	@echo "Building hook docker image"
 	docker buildx build ${PLATFORMS_ARG} \
@@ -77,3 +78,23 @@ docker-controller:
 	-t "${IMAGE_REPO}/controller:${VERSION}" \
 	-f Dockerfile \
 	. ${PUSH_ARG}
+
+# Create release artifacts for tarter
+release-tarter:
+	@echo "Prepare tarter release artifacts"
+	@mkdir -p release
+	@for platform in $(TARTER_PLATFORMS); do \
+		IFS='/' read -r OS ARCH <<< "$$platform"; \
+		echo "Building tarter for $$OS/$$ARCH"; \
+		GOOS=$$OS GOARCH=$$ARCH go build -ldflags ${GO_BUILD_LDFLAGS} \
+			-o release/macos-actions-runner-tarter-$$OS-$$ARCH ./cmd/tarter; \
+	done
+	@cd release && sha256sum * > macos-actions-runner-tarter-checksums.txt
+	@echo "Release artifacts created in ./release directory"
+
+# Clean release artifacts
+clean-release:
+	@echo "Cleaning release artifacts"
+	rm -rf release
+
+.PHONY: release-tarter clean-release
