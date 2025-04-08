@@ -27,7 +27,7 @@ jobs:
 
       - name: Set version from release
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Build tarter release artifacts
         run: make release-tarter VERSION=${{ env.VERSION }}

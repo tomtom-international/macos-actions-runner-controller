@@ -84,10 +84,11 @@ release-tarter:
 	@echo "Prepare tarter release artifacts"
 	@mkdir -p release
 	@for platform in $(TARTER_PLATFORMS); do \
-		IFS='/' read -r OS ARCH <<< "$$platform"; \
-		echo "Building tarter for $$OS/$$ARCH"; \
-		GOOS=$$OS GOARCH=$$ARCH go build -ldflags ${GO_BUILD_LDFLAGS} \
-			-o release/macos-actions-runner-tarter-$$OS-$$ARCH ./cmd/tarter; \
+		os=$$(echo $$platform | cut -d'/' -f1); \
+		arch=$$(echo $$platform | cut -d'/' -f2); \
+		echo "Building OS: $$os, ARCH: $$arch"; \
+		GOOS=$$os GOARCH=$$arch go build -ldflags ${GO_BUILD_LDFLAGS} \
+			-o release/macos-actions-runner-tarter-$$os-$$arch ./cmd/tarter; \
 	done
 	@cd release && sha256sum * > macos-actions-runner-tarter-checksums.txt
 	@echo "Release artifacts created in ./release directory"
