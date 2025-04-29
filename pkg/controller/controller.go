@@ -32,6 +32,7 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -73,15 +74,21 @@ func (c *Controller) ListenAndServe(configuration config.ControllerConfig) {
 	server.ListenAndServeControllerServer(c, address, port)
 }
 
-func (c *Controller) RunWithContext(ctx context.Context) {
+func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	// TODO: At launch, read all nodes from etcd and start node heartbeat watchers
 	// TODO: At launch, read all runners from etcd and start runner create watchers
-	go c.listenForNewRunners(ctx, c.createRunner)
-
-	go c.checkRegisteredNodes()
+	c.checkRegisteredNodes()
 
 	scheduler := newScheduler(c.nodePoolManager, c.runnerManager)
-	go scheduler.startScheduler(ctx)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		c.listenForNewRunners(ctx, c.createRunner)
+	}()
+	go func() {
+		defer wg.Done()
+		scheduler.startScheduler(ctx)
+	}()
 }
 
 func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (types.NodeRegistrationStatus, *types.Node, error) {

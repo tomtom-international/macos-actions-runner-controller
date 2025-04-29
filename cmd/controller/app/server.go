@@ -28,6 +28,7 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -104,10 +105,15 @@ func Run(c *controller.Controller) {
 		}
 	}(c.EtcdClient)
 
-	go c.RunWithContext(ctx)
+	var wg sync.WaitGroup
+	go c.Run(ctx, &wg)
 	go c.ListenAndServe(configuration)
 
 	// Wait for context cancellation
 	<-ctx.Done()
-	logger.Infof("Shutting down")
+	logger.Infof("Starting graceful shutdown...")
+
+	// Wait for all goroutines to finish their work
+	wg.Wait()
+	logger.Infof("All operations completed, shutting down")
 }
