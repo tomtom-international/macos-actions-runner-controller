@@ -24,6 +24,7 @@ type ControllerConfig struct {
 	LogDebug      bool `env:"LOG_DEBUG" envDefault:"false"`
 	LogCaller     bool `env:"LOG_CALLER" envDefault:"false"`
 	LogStacktrace bool `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogJSON       bool `env:"LOG_JSON" envDefault:"false"`
 	// address is the IP address for the Controller to serve on (default 0.0.0.0
 	// for serving on all interfaces)
 	Address string `env:"ADDRESS" envDefault:"0.0.0.0"`

@@ -22,6 +22,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"math/rand"
+	"time"
 )
 
 type SQSClient struct {
@@ -81,4 +83,35 @@ func (c *SQSClient) ReceiveMessages(ctx context.Context, maxMessages int32, wait
 	}
 
 	return result.Messages, nil
+}
+
+// CalculateNextBackoff computes the next backoff duration using an exponential
+// strategy with jitter to prevent synchronized polling.
+//
+// Parameters:
+//   - current: The current backoff duration.
+//   - max: The maximum allowable backoff duration.
+//
+// Returns:
+//
+//	A time.Duration representing the next backoff period.
+//
+// The function doubles the current backoff time, then applies a random jitter
+// (subtracting up to 25% of the doubled value) to prevent multiple instances
+// from synchronizing their polling cycles. The result is capped at the specified
+// maximum duration.
+func (c *SQSClient) CalculateNextBackoff(current, maxDuration time.Duration) time.Duration {
+	// Double the current backoff
+	next := current * 2
+
+	// Apply jitter (randomness) to prevent synchronized polling
+	jitter := time.Duration(rand.Int63n(int64(next / 4)))
+	next -= jitter
+
+	// Ensure we don't exceed the maximum
+	if next > maxDuration {
+		return maxDuration
+	}
+
+	return next
 }

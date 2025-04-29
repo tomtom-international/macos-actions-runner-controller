@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
@@ -31,7 +32,13 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"net"
+	"sync"
 	"time"
+)
+
+const (
+	minBackoff = 4 * time.Second
+	maxBackoff = 60 * time.Second
 )
 
 type Controller struct {
@@ -67,15 +74,21 @@ func (c *Controller) ListenAndServe(configuration config.ControllerConfig) {
 	server.ListenAndServeControllerServer(c, address, port)
 }
 
-func (c *Controller) RunWithContext(ctx context.Context) {
+func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	// TODO: At launch, read all nodes from etcd and start node heartbeat watchers
 	// TODO: At launch, read all runners from etcd and start runner create watchers
-	go c.listenForNewRunners(ctx, c.createRunner)
-
-	go c.checkRegisteredNodes()
+	c.checkRegisteredNodes()
 
 	scheduler := newScheduler(c.nodePoolManager, c.runnerManager)
-	go scheduler.startScheduler(ctx)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		c.listenForNewRunners(ctx, c.createRunner)
+	}()
+	go func() {
+		defer wg.Done()
+		scheduler.startScheduler(ctx)
+	}()
 }
 
 func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (types.NodeRegistrationStatus, *types.Node, error) {
@@ -328,6 +341,7 @@ func (c *Controller) GetRunnerList() ([]types.Runner, error) {
 }
 
 func (c *Controller) listenForNewRunners(ctx context.Context, handlerFunc func(runner *types.Runner) error) {
+	logger.Debugf("Listening for new messages from SQS queue: %s", c.sqsRunnerRequestClient.QueueURL)
 	pollForMessages(ctx, c.sqsRunnerRequestClient, handlerFunc)
 }
 
@@ -357,36 +371,61 @@ func (c *Controller) checkRegisteredNodes() {
 }
 
 func pollForMessages(ctx context.Context, sqsClient *sqs.SQSClient, handler func(runner *types.Runner) error) {
+	currentBackoff := minBackoff
+
 	for {
-		// TODO: move 2 and 20 magic numbers to const?
-		// TODO: fix panic on context close
-		messages, err := sqsClient.ReceiveMessages(ctx, 10, 20)
-		if err != nil {
-			logger.Errorf("Failed to receive messages. Error: %v", err.Error())
-			//continue
-			panic(err)
-		}
-
-		for _, msg := range messages {
-			runner := types.Runner{}
-			logger.Debugf("Received message with id: %s from queue %s", *msg.MessageId, sqsClient.QueueURL)
-			err := json.Unmarshal([]byte(*msg.Body), &runner)
+		select {
+		case <-ctx.Done():
+			// Context was canceled - exit gracefully without error
+			logger.Debugf("Context canceled, stopping message polling from %s", sqsClient.QueueURL)
+			return
+		default:
+			messages, err := sqsClient.ReceiveMessages(ctx, 10, 20)
 			if err != nil {
-				// message will be sent to DLQ after maximum receives
-				logger.Errorf("Failed to unmarshal message %s from queue %v: %v", *msg.MessageId, sqsClient.QueueURL, err.Error())
-				continue
-			}
-			runner.Condition.CreateRequestID = *msg.MessageId
+				// Check if the error is due to context cancellation
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					logger.Debugf("Context canceled while receiving messages, stopping polling")
+					return
+				}
 
-			err = handler(&runner)
-			if err != nil {
+				logger.Errorf("Failed to receive messages: %s", err.Error())
+
+				// Increase backoff on errors
+				currentBackoff = sqsClient.CalculateNextBackoff(currentBackoff, maxBackoff)
+				time.Sleep(currentBackoff)
 				continue
 			}
 
-			_, err = sqsClient.DeleteMessage(ctx, *msg.ReceiptHandle)
-			if err != nil {
-				logger.Errorf("Failed to delete message %s from queue %v: %v", *msg.MessageId, sqsClient.QueueURL, err.Error())
-				continue
+			if len(messages) == 0 {
+				// No messages found, increase the backoff
+				currentBackoff = sqsClient.CalculateNextBackoff(currentBackoff, maxBackoff)
+				time.Sleep(currentBackoff)
+			} else {
+				// Messages found, reset backoff
+				currentBackoff = minBackoff
+
+				for _, msg := range messages {
+					runner := types.Runner{}
+					logger.Debugf("Received message with id: %s from queue %s", *msg.MessageId, sqsClient.QueueURL)
+					err := json.Unmarshal([]byte(*msg.Body), &runner)
+					if err != nil {
+						// message will be sent to DLQ after maximum receives
+						logger.Errorf("Failed to unmarshal message %s from queue %s: %s", *msg.MessageId, sqsClient.QueueURL, err.Error())
+						continue
+					}
+					runner.Condition.CreateRequestID = *msg.MessageId
+
+					err = handler(&runner)
+					if err != nil {
+						continue
+					}
+
+					_, err = sqsClient.DeleteMessage(ctx, *msg.ReceiptHandle)
+					if err != nil {
+						logger.Errorf("Failed to delete message %s from queue %s: %s", *msg.MessageId, sqsClient.QueueURL, err.Error())
+						continue
+					}
+				}
 			}
 		}
 	}

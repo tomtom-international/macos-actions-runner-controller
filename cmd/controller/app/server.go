@@ -28,6 +28,7 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -52,7 +53,11 @@ func NewControllerCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.InitLogger(configuration.LogDebug, configuration.LogCaller, configuration.LogStacktrace)
+			err := logger.InitLogger(configuration.LogDebug, configuration.LogCaller, configuration.LogStacktrace, configuration.LogJSON)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
 			c, err := NewController()
 			if err != nil {
 				logger.Fatalf("Error creating Controller: %s", err.Error())
@@ -84,7 +89,9 @@ func NewController() (*controller.Controller, error) {
 }
 
 func Run(c *controller.Controller) {
-	logger.Infof("Version: ...")
+	defer logger.Sync()
+	logger.Infof("Starting Controller...")
+	logger.Infof("Version: %s", coreVersion.GetVersionInfo().Version)
 
 	// Create a context that is canceled on SIGINT or SIGTERM signal
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -98,10 +105,15 @@ func Run(c *controller.Controller) {
 		}
 	}(c.EtcdClient)
 
-	go c.RunWithContext(ctx)
+	var wg sync.WaitGroup
+	go c.Run(ctx, &wg)
 	go c.ListenAndServe(configuration)
 
 	// Wait for context cancellation
 	<-ctx.Done()
-	logger.Infof("Shutting down")
+	logger.Infof("Starting graceful shutdown...")
+
+	// Wait for all goroutines to finish their work
+	wg.Wait()
+	logger.Infof("All operations completed, shutting down")
 }

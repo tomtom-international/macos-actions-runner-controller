@@ -63,7 +63,6 @@ func (s *Scheduler) startScheduler(ctx context.Context) {
 func (s *Scheduler) schedule() {
 	nodes := s.getNodeList()
 	if len(nodes) == 0 {
-		logger.Debugf("No nodes available for scheduling")
 		return
 	}
 	pendingRunners := s.getPendingRunners()

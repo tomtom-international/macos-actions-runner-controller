@@ -34,6 +34,7 @@ type TarterConfig struct {
 	LogDebug            bool   `env:"LOG_DEBUG" envDefault:"false"`
 	LogCaller           bool   `env:"LOG_CALLER" envDefault:"false"`
 	LogStacktrace       bool   `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogJSON             bool   `env:"LOG_JSON" envDefault:"false"`
 	Port                string `env:"PORT" envDefault:"8041"`
 	Mode                string `env:"TARTER_MODE"`
 	ConfigFolder        string `env:"TARTER_CONFIG_PATH" envDefault:"/opt/tarter/config"`
