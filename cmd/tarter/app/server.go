@@ -29,6 +29,7 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"net/http"
+	"os"
 )
 
 var (
@@ -65,8 +66,11 @@ func NewTarterCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-
-			logger.InitLogger(tarterConfig.LogDebug, tarterConfig.LogCaller, tarterConfig.LogStacktrace)
+			err := logger.InitLogger(tarterConfig.LogDebug, tarterConfig.LogCaller, tarterConfig.LogStacktrace, tarterConfig.LogJSON)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
 			t, r, err := NewTarter()
 			if err != nil {
 				logger.Fatalf("Error creating Tarter application: %s", err.Error())
@@ -128,6 +132,7 @@ func NewTarter() (*tarter.Tarter, *mux.Router, error) {
 }
 
 func Run(r *mux.Router, t *tarter.Tarter) error {
+	defer logger.Sync()
 	switch {
 	case config.TarterMode(tarterConfig.Mode) == config.StandaloneMode:
 		api.SetupStandaloneTarterRoutes(r, t)

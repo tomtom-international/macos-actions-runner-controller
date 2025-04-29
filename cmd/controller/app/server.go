@@ -52,7 +52,11 @@ func NewControllerCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.InitLogger(configuration.LogDebug, configuration.LogCaller, configuration.LogStacktrace)
+			err := logger.InitLogger(configuration.LogDebug, configuration.LogCaller, configuration.LogStacktrace, configuration.LogJSON)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
 			c, err := NewController()
 			if err != nil {
 				logger.Fatalf("Error creating Controller: %s", err.Error())
@@ -84,7 +88,9 @@ func NewController() (*controller.Controller, error) {
 }
 
 func Run(c *controller.Controller) {
-	logger.Infof("Version: ...")
+	defer logger.Sync()
+	logger.Infof("Starting Controller...")
+	logger.Infof("Version: %s", coreVersion.GetVersionInfo().Version)
 
 	// Create a context that is canceled on SIGINT or SIGTERM signal
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

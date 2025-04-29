@@ -7,27 +7,12 @@ import (
 )
 
 var (
-	logging *zap.Logger
+	log *zap.Logger
 )
 
-func InitLogger(debugLog bool, logCaller bool, logStacktrace bool) {
+func InitLogger(debugLog, logCaller, logStacktrace, jsonLog bool) error {
 	var level zapcore.Level
-	var callerKey string
-	var stacktraceKey string
-
-	if debugLog {
-		level = zapcore.DebugLevel
-	} else {
-		level = zapcore.InfoLevel
-	}
-
-	if logCaller {
-		callerKey = "caller"
-	}
-
-	if logStacktrace {
-		stacktraceKey = "stacktrace"
-	}
+	var err error
 
 	conf := zap.Config{
 		Level:       zap.NewAtomicLevelAt(level),
@@ -37,9 +22,7 @@ func InitLogger(debugLog bool, logCaller bool, logStacktrace bool) {
 			TimeKey:        "t",
 			LevelKey:       "level",
 			NameKey:        "logger",
-			CallerKey:      callerKey,
 			MessageKey:     "msg",
-			StacktraceKey:  stacktraceKey,
 			LineEnding:     zapcore.DefaultLineEnding,
 			EncodeLevel:    zapcore.LowercaseLevelEncoder,
 			EncodeTime:     zapcore.ISO8601TimeEncoder,
@@ -50,29 +33,53 @@ func InitLogger(debugLog bool, logCaller bool, logStacktrace bool) {
 		ErrorOutputPaths: []string{"stderr"},
 	}
 
-	var err error
-	logging, err = conf.Build()
-	if err != nil {
-		panic(err)
+	if debugLog {
+		level = zapcore.DebugLevel
+	} else {
+		level = zapcore.InfoLevel
 	}
+	if jsonLog {
+		conf.Encoding = "json"
+	} else {
+		conf.Encoding = "console"
+	}
+	if logCaller {
+		conf.EncoderConfig.CallerKey = "caller"
+	}
+	if logStacktrace {
+		conf.EncoderConfig.StacktraceKey = "stacktrace"
+	}
+	conf.Level = zap.NewAtomicLevelAt(level)
+
+	log, err = conf.Build()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func Errorf(format string, args ...interface{}) {
-	logging.Error(fmt.Sprintf(format, args...))
+	log.Error(fmt.Sprintf(format, args...))
 }
 
 func Infof(format string, args ...interface{}) {
-	logging.Info(fmt.Sprintf(format, args...))
+	log.Info(fmt.Sprintf(format, args...))
 }
 
 func Debugf(format string, args ...interface{}) {
-	logging.Debug(fmt.Sprintf(format, args...))
+	log.Debug(fmt.Sprintf(format, args...))
 }
 
 func Warnf(format string, args ...interface{}) {
-	logging.Warn(fmt.Sprintf(format, args...))
+	log.Warn(fmt.Sprintf(format, args...))
 }
 
 func Fatalf(format string, args ...interface{}) {
-	logging.Fatal(fmt.Sprintf(format, args...))
+	log.Fatal(fmt.Sprintf(format, args...))
+}
+
+func Sync() {
+	if log != nil {
+		_ = log.Sync()
+	}
 }
