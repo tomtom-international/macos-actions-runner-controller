@@ -11,12 +11,12 @@ ifeq (${PLATFORMS}, )
 endif
 
 ifeq (${DOCKER_IMG_BUILD}, load)
-	export PUSH_ARG="--load"
+	export PUSH_ARG=--load
 else ifeq (${DOCKER_IMG_BUILD}, cache)
 	# if specified, image will only be available in the build cache, it won't be pushed or loaded
 else
-	export PLATFORMS_ARG="--platform ${PLATFORMS}"
-	export PUSH_ARG="--push"
+	export PLATFORMS_ARG=--platform ${PLATFORMS}
+	export PUSH_ARG=--push
 endif
 
 build: build-controller build-tarter build-hook
