@@ -36,7 +36,7 @@ type ControllerConfig struct {
 	// EtcdNodeDeregisterLease is the lease time in seconds for the node deregister
 	EtcdNodeDeregisterLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"3600"`
 	// EtcdRunnerFinishedLease is the lease time in seconds for the runner finished
-	EtcdRunnerFinishedLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"172800"`
+	EtcdRunnerFinishedLease int `env:"ETCD_RUNNER_FINISHED_LEASE" envDefault:"172800"`
 }
 
 func LoadConfiguration(c *ControllerConfig) error {
@@ -49,5 +49,4 @@ func LoadConfiguration(c *ControllerConfig) error {
 const (
 	EtcdNodePoolKey = "nodes/"
 	EtcdRunnersKey  = "runners/"
-	EtcdEventsKey   = "events/"
 )

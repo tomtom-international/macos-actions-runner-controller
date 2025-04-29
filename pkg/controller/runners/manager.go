@@ -30,16 +30,18 @@ import (
 )
 
 type Manager struct {
-	etcdClient         *etcd.EtcdClient
-	etcdKeyPrefix      string
-	runnersWatcher     *runnersWatcher
-	runnersWatcherLock sync.RWMutex
+	etcdKeyPrefix           string
+	etcdRunnerFinishedLease int
+	etcdClient              *etcd.EtcdClient
+	runnersWatcher          *runnersWatcher
+	runnersWatcherLock      sync.RWMutex
 }
 
-func NewManager(etcdClient *etcd.EtcdClient, etcdKeyPrefix string) *Manager {
+func NewManager(etcdClient *etcd.EtcdClient, etcdKeyPrefix string, etcdRunnerFinishedLease int) *Manager {
 	return &Manager{
-		etcdClient:    etcdClient,
-		etcdKeyPrefix: etcdKeyPrefix,
+		etcdClient:              etcdClient,
+		etcdKeyPrefix:           etcdKeyPrefix,
+		etcdRunnerFinishedLease: etcdRunnerFinishedLease,
 	}
 }
 
@@ -58,6 +60,28 @@ func (m *Manager) SaveRunner(runner *types.Runner) error {
 		return err
 	}
 	logger.Debugf("Runner %s saved to etcd", runner.ID)
+	return nil
+}
+
+func (m *Manager) SaveRunnerWithLease(runner *types.Runner) error {
+	leaseID, err := m.etcdClient.GrantLease(m.etcdRunnerFinishedLease)
+	if err != nil {
+		logger.Errorf("Saving runner %s failed to grant lease, error: %s", runner.ID, err.Error())
+		return err
+	}
+	runner.Condition.LastTransitionTime = time.Now()
+	rawRunner, err := json.Marshal(runner)
+	if err != nil {
+		logger.Errorf("Saving runner %s failed to marshal, error: %s", runner.ID, err.Error())
+		return err
+	}
+	key := path.Join("/", m.etcdKeyPrefix, string(runner.ID))
+	err = m.etcdClient.PutWithLease(key, string(rawRunner), leaseID)
+	if err != nil {
+		logger.Errorf("Saving runner %s failed, error: %s", runner.ID, err.Error())
+		return err
+	}
+	logger.Debugf("Runner %s saved to etcd with lease", runner.ID)
 	return nil
 }
 
