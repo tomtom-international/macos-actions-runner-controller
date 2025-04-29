@@ -189,8 +189,7 @@ func (c *Controller) DeregisterNode(nodeID utils.UID) (*types.Node, error) {
 			node.Status.Condition.Status = types.Deregistered
 			node.Status.Condition.Message = "Node deregistered"
 			node.Status.Condition.LastTransitionTime = time.Now()
-			// TODO: Set lease on deregistered node
-			err = c.nodePoolManager.SaveNode(*node)
+			err = c.nodePoolManager.SaveNodeWithLease(*node)
 			if err != nil {
 				logger.Errorf("Failed to deregister node %s, error: %v", node.Name, err)
 				return nil, err
@@ -232,7 +231,7 @@ func (c *Controller) DisableNode(nodeID utils.UID) (*types.Node, error) {
 		node.Status.Condition.Status = types.Disabled
 		node.Status.Condition.Message = "Node disabled for placing new runners"
 		node.Status.Condition.LastTransitionTime = time.Now()
-		err = c.nodePoolManager.SaveNodeWithLease(*node)
+		err = c.nodePoolManager.SaveNode(*node)
 		if err != nil {
 			logger.Errorf("Failed to disable node %s, error: %v", node.Name, err)
 			return nil, err
