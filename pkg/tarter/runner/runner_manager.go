@@ -27,20 +27,14 @@ import (
 )
 
 type RunnerManager struct {
-	tartClient *tart.Client
-
+	tartClient   *tart.Client
 	githubClient *ghclient.Client
-
-	//Worker is the worker
-	workers map[runnerKey]*worker
+	workers      map[runnerKey]*worker
+	stateManager *state.StateManager
+	nodeName     string
+	maxWorkers   int
 	// Lock for accessing & mutating workers
 	workerLock sync.RWMutex
-
-	stateManager *state.StateManager
-
-	maxWorkers int
-
-	nodeName string
 }
 
 type runnerKey struct {

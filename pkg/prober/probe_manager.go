@@ -28,21 +28,12 @@ import (
 )
 
 type ProberManager struct {
-	// Map of active workers for probes
-	workers map[probeTargetKey]*worker
-	// Lock for accessing & mutating workers
-	workerLock sync.RWMutex
-
-	//livenessManager manages the results of liveness probes
 	livenessManager results.Manager
-
-	//startupManager manages the results of startup probes
-	startupManager results.Manager
-
-	// prober executes the probe actions.
-	prober *prober
-
-	stateManager *state.StateManager
+	startupManager  results.Manager
+	workers         map[probeTargetKey]*worker
+	prober          *prober
+	stateManager    *state.StateManager
+	workerLock      sync.RWMutex
 }
 
 func NewManager(

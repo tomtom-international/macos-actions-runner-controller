@@ -34,12 +34,12 @@ const (
 )
 
 type heartbeatWatcher struct {
-	nodeID      utils.UID
-	watchKey    string
-	etcdClient  *etcd.EtcdClient
 	ctx         context.Context
+	etcdClient  *etcd.EtcdClient
 	ctxCancel   context.CancelFunc
 	nodeManager *Manager
+	nodeID      utils.UID
+	watchKey    string
 	pause       bool
 }
 

@@ -29,16 +29,16 @@ import (
 )
 
 type Manager struct {
-	syncNodeStatusMux     sync.Mutex
-	stateManager          *state.StateManager
-	registerNode          bool
-	registrationCompleted bool
 	lastHeartbeatTime     time.Time
+	stateManager          *state.StateManager
 	node                  *types.Node
 	controllerClient      *controller.Client
 	nodeInfo              types.NodeInfo
 	nodeCapacity          types.Resources
 	nodeStatusUpdateRetry int
+	syncNodeStatusMux     sync.Mutex
+	registerNode          bool
+	registrationCompleted bool
 	stopSyncNodeStatus    bool
 }
 

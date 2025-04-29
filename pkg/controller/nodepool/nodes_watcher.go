@@ -32,14 +32,14 @@ import (
 )
 
 type nodesWatcher struct {
-	key         string
+	ctx         context.Context
 	etcdClient  *etcd.EtcdClient
 	subscribers map[*websocket.Conn]chan types.WatcherNodesUpdate
-	watching    bool
-	mu          sync.RWMutex
-	ctx         context.Context
 	cancelFn    context.CancelFunc
 	manager     *Manager
+	key         string
+	mu          sync.RWMutex
+	watching    bool
 }
 
 func newNodesWatcher(

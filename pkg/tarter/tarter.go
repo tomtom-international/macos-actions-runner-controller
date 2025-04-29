@@ -43,43 +43,30 @@ const (
 )
 
 type Tarter struct {
-	nodeName string
-
-	nodeIP string
-
-	tarterServerPort string
-
-	versionInfo coreVersion.VersionInfo
-
-	githubClient *ghclient.Client
-
-	// maintain all requests to Tart cli tool
-	tartClient *tart.Client
-
-	// maintain all probes
-	proberManager *prober.ProberManager
-
-	// maintain running processes
-	runnerManager *runner.RunnerManager
-
-	// TODO: Allow to communicate with StateManager only for Tarter
-	// Runners State Machine which store runners state
-	StateManager *state.StateManager
-
 	// TODO: Consider using link to Config instead of Config itself
 	// standalone mode configuration
 	config config.Config
-
-	configPath string
-
+	// maintain all probes
+	proberManager *prober.ProberManager
+	githubClient  *ghclient.Client
+	// maintain all requests to Tart cli tool
+	tartClient *tart.Client
+	// maintain running processes
+	runnerManager *runner.RunnerManager
+	// TODO: Allow to communicate with StateManager only for Tarter
+	// Runners State Machine which store runners state
+	StateManager *state.StateManager
 	// event bus
 	eventBus *events.EventBus
-
 	// controller client for managed mode
 	controllerClient *controller.Client
-
 	// manage node status updates
-	nodeManager *node.Manager
+	nodeManager      *node.Manager
+	versionInfo      coreVersion.VersionInfo
+	tarterServerPort string
+	nodeName         string
+	nodeIP           string
+	configPath       string
 }
 
 func NewTarter(tarterConfig config.TarterConfig,

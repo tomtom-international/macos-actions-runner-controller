@@ -30,26 +30,21 @@ import (
 )
 
 type Request struct {
-	c *RESTClient
-
+	err        error
+	c          *RESTClient
+	params     url.Values
+	headers    http.Header
+	method     string
+	subPath    string
+	body       []byte
 	timeout    time.Duration
 	maxRetries int
-
-	// generic components accessible via method setters
-	method  string
-	subPath string
-	params  url.Values
-	headers http.Header
-	body    []byte
-
-	// output
-	err error
 }
 
 // Result contains the result of calling Request.Do().
 type Result struct {
-	Body       []byte
 	Err        error
+	Body       []byte
 	StatusCode int
 }
 

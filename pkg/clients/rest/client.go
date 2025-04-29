@@ -33,15 +33,12 @@ type Client interface {
 type RESTClient struct {
 	// base is the root URL for all invocations of the client
 	baseURL *url.URL
-
-	// versionedAPIPath is a path segment connecting the base URL to the resource root
-	pathPrefix string
-
-	// ContentType specifies the format used to communicate with the server.
-	contentType string
-
 	// Set specific behavior of the client.  If not set http.DefaultClient will be used.
 	Client *http.Client
+	// versionedAPIPath is a path segment connecting the base URL to the resource root
+	pathPrefix string
+	// ContentType specifies the format used to communicate with the server.
+	contentType string
 }
 
 func NewRESTClient(host string, pathPrefix string, contentType string, client *http.Client) (*RESTClient, error) {

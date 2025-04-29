@@ -30,11 +30,11 @@ import (
 
 type Manager struct {
 	etcdClient              *etcd.EtcdClient
+	heartbeatWatchers       map[utils.UID]*heartbeatWatcher
+	nodesWatcher            *nodesWatcher
 	etcdKeyPrefix           string
 	etcdNodeDeregisterLease int
-	heartbeatWatchers       map[utils.UID]*heartbeatWatcher
 	heartbeatWatcherLock    sync.RWMutex
-	nodesWatcher            *nodesWatcher
 	nodesWatcherLock        sync.RWMutex
 }
 

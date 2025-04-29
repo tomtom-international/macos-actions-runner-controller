@@ -40,11 +40,11 @@ const (
 )
 
 type Runner struct {
+	Condition     RunnerCondition `json:"condition"`
 	ID            utils.UID       `json:"id"`
 	NodeID        utils.UID       `json:"nodeId,omitempty"`
-	Config        RunnerConfig    `json:"config"`
 	GhaRunnerName string          `json:"ghaRunnerName,omitempty"`
-	Condition     RunnerCondition `json:"condition"`
+	Config        RunnerConfig    `json:"config"`
 }
 
 type RunnerCondition struct {
@@ -56,25 +56,25 @@ type RunnerCondition struct {
 }
 
 type RunnerConfig struct {
-	Name                   string            `json:"name" yaml:"name"`
-	Cpu                    utils.Int32String `json:"cpu" yaml:"cpu"`
-	Memory                 utils.Int32String `json:"memory" yaml:"memory"`
-	BaseImage              string            `json:"baseImage" yaml:"baseImage"`
-	RestartOnFailure       bool              `json:"restartOnFailure" yaml:"restartOnFailure"`
-	CacheVolumePath        string            `json:"cacheVolumePath" yaml:"cacheVolumePath"`
-	DisableRootDiskOptions bool              `json:"disableRootDiskOptions" yaml:"disableRootDiskOptions"`
-	NoGraphics             bool              `json:"noGraphics" yaml:"noGraphics"`
-	SoftnetNetwork         SoftnetNetwork    `json:"softnetNetwork" yaml:"softnetNetwork"`
-	ReleaseVersion         string            `json:"releaseVersion" yaml:"releaseVersion"`
-	RunnerGroup            string            `json:"runnerGroup" yaml:"runnerGroup"`
-	RunnerLabels           []string          `json:"labels" yaml:"labels"`
-	RunnerHosts            []RunnerHosts     `json:"hosts" yaml:"hosts"`
-	RunnerHostname         string            `json:"hostname" yaml:"hostname"`
-	LivenessProbe          *t.Probe          `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
-	StartupProbe           *t.Probe          `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
+	StartupProbe   *t.Probe `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
+	LivenessProbe  *t.Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+	ReleaseVersion string   `json:"releaseVersion" yaml:"releaseVersion"`
+	RunnerGroup    string   `json:"runnerGroup" yaml:"runnerGroup"`
+	Name           string   `json:"name" yaml:"name"`
+	BaseImage      string   `json:"baseImage" yaml:"baseImage"`
 	// JitConfig is ACTIONS_RUNNER_INPUT_JITCONFIG environment variable passed by Actions Runner Controller.
 	// Temporary solution before Runners Listener is implemented.
-	JitConfig string `json:"jitConfig,omitempty" yaml:"jitConfig,omitempty"`
+	JitConfig              string            `json:"jitConfig,omitempty" yaml:"jitConfig,omitempty"`
+	CacheVolumePath        string            `json:"cacheVolumePath" yaml:"cacheVolumePath"`
+	RunnerHostname         string            `json:"hostname" yaml:"hostname"`
+	RunnerHosts            []RunnerHosts     `json:"hosts" yaml:"hosts"`
+	RunnerLabels           []string          `json:"labels" yaml:"labels"`
+	Memory                 utils.Int32String `json:"memory" yaml:"memory"`
+	Cpu                    utils.Int32String `json:"cpu" yaml:"cpu"`
+	SoftnetNetwork         SoftnetNetwork    `json:"softnetNetwork" yaml:"softnetNetwork"`
+	NoGraphics             bool              `json:"noGraphics" yaml:"noGraphics"`
+	DisableRootDiskOptions bool              `json:"disableRootDiskOptions" yaml:"disableRootDiskOptions"`
+	RestartOnFailure       bool              `json:"restartOnFailure" yaml:"restartOnFailure"`
 }
 
 type RunnerHosts struct {
@@ -83,8 +83,8 @@ type RunnerHosts struct {
 }
 
 type SoftnetNetwork struct {
-	Enable       bool     `yaml:"enable"`
 	AllowedCIDRs []string `yaml:"allowCIDRs"`
+	Enable       bool     `yaml:"enable"`
 }
 
 type WatcherRunnersUpdate struct {

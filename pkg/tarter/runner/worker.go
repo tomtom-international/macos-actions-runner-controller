@@ -42,13 +42,12 @@ type worker struct {
 	sigChan       chan os.Signal
 	runnerManager *RunnerManager
 	runner        *t.Runner
+	cmd           *exec.Cmd
 	tartVMName    string
+	stdout        bytes.Buffer
+	stderr        bytes.Buffer
 	stopOnce      sync.Once
-
-	cmd     *exec.Cmd
-	cmdLock sync.Mutex
-	stdout  bytes.Buffer
-	stderr  bytes.Buffer
+	cmdLock       sync.Mutex
 }
 
 func newWorker(runnerManager *RunnerManager, runner *t.Runner) *worker {

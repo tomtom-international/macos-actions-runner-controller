@@ -52,10 +52,10 @@ type hookConfig struct {
 	GhaJITConfig        string `env:"ACTIONS_RUNNER_INPUT_JITCONFIG"`
 	RunnerConfigFile    string `env:"RUNNER_CONFIG_FILE" envDefault:"/opt/tarter-hook/runner_config.yaml"`
 	GhaRunnerGroup      string `env:"GHA_RUNNER_GROUP"`
-	GhAppId             int    `env:"GH_APP_ID"`
-	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
 	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
 	GhAppOrg            string `env:"GH_APP_ORG"`
+	GhAppId             int    `env:"GH_APP_ID"`
+	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
 }
 
 func loadHookConfiguration() {

@@ -56,20 +56,16 @@ type Client struct {
 // ClientConfig contains the configuration needed to authenticate
 // and interact with GitHub API.
 type ClientConfig struct {
-	// AppID is the GitHub App ID
-	AppID int64
-
-	// InstallationID is the GitHub App Installation ID
-	InstallationID int64
-
-	// PrivateKey contains the private key bytes for the GitHub App
-	PrivateKey []byte
-
 	// PrivateKeyFile is the path to the private key file
 	PrivateKeyFile string
-
 	// Organization is the GitHub organization name
 	Organization string
+	// PrivateKey contains the private key bytes for the GitHub App
+	PrivateKey []byte
+	// AppID is the GitHub App ID
+	AppID int64
+	// InstallationID is the GitHub App Installation ID
+	InstallationID int64
 }
 
 // New creates a new GitHub client with the provided configuration.

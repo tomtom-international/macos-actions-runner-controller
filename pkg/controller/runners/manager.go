@@ -30,10 +30,10 @@ import (
 )
 
 type Manager struct {
-	etcdKeyPrefix           string
-	etcdRunnerFinishedLease int
 	etcdClient              *etcd.EtcdClient
 	runnersWatcher          *runnersWatcher
+	etcdKeyPrefix           string
+	etcdRunnerFinishedLease int
 	runnersWatcherLock      sync.RWMutex
 }
 

@@ -27,28 +27,20 @@ import (
 )
 
 type worker struct {
-	// Channel for stopping the probe.
-	stopCh chan struct{}
-
-	// Describes the probe configuration (read-only)
-	spec *pt.Probe
-
-	// The type of the worker.
-	probeType pt.ProbeType
-
-	probeTarget *pt.ProbeTarget
-
 	// Where to store these workers results.
 	resultsManager results.Manager
-
+	// Channel for stopping the probe.
+	stopCh chan struct{}
+	// Describes the probe configuration (read-only)
+	spec         *pt.Probe
+	probeTarget  *pt.ProbeTarget
+	probeManager *ProberManager
 	// The probe value during the initial delay.
 	initialValue probe.Result
-
-	probeManager *ProberManager
-
 	// The last probe result for this worker.
 	lastResult probe.Result
-
+	// The type of the worker.
+	probeType pt.ProbeType
 	// How many times in a row the probe has returned the same result.
 	resultRun int
 }

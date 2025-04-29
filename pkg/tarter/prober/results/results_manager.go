@@ -28,10 +28,9 @@ import (
 
 // Prober results manager implementation.
 type runnerProbeResultManager struct {
-	mu        sync.RWMutex
+	eventBus  *events.EventBus
 	probeType pt.ProbeType
-	// Event Bus to send health_check events
-	eventBus *events.EventBus
+	mu        sync.RWMutex
 }
 
 var _ results.Manager = &runnerProbeResultManager{}

@@ -124,8 +124,8 @@ func TestNew(t *testing.T) {
 	// Test with missing required fields
 	testCases := []struct {
 		name   string
-		config ClientConfig
 		errMsg string
+		config ClientConfig
 	}{
 		{
 			name:   "Missing AppID",
