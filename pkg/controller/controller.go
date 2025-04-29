@@ -57,7 +57,7 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 		sqsRunnerRequestClient: sqsClient,
 		runnerUpdateCn:         make(chan types.Runner, 100),
 		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease),
-		runnerManager:          r.NewManager(etcdClient, config.EtcdRunnersKey),
+		runnerManager:          r.NewManager(etcdClient, config.EtcdRunnersKey, configuration.EtcdRunnerFinishedLease),
 	}, nil
 }
 
@@ -422,7 +422,7 @@ func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate)
 		if err != nil {
 			return nil, err
 		}
-
+		err = c.runnerManager.SaveRunner(runner)
 	case types.Failed:
 		logger.Debugf("Runner %s failed. Error: %s", runner.ID, update.Message)
 		runner.Condition.Status = update.Status
@@ -432,12 +432,17 @@ func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate)
 		if err != nil {
 			return nil, err
 		}
+		err = c.runnerManager.SaveRunnerWithLease(runner)
+	case types.Finished:
+		logger.Debugf("Runner %s finished", runner.ID)
+		runner.Condition.Status = update.Status
+		err = c.runnerManager.SaveRunnerWithLease(runner)
 	default:
 		logger.Debugf("Runner %s is %s", runner.ID, runner.Condition.Status)
 		runner.Condition.Status = update.Status
+		err = c.runnerManager.SaveRunner(runner)
 	}
 
-	err = c.runnerManager.SaveRunner(runner)
 	if err != nil {
 		logger.Errorf("Failed to save runner %s, error: %v", runner.ID, err)
 		return nil, fmt.Errorf("failed to save runner %s", runner.ID)
