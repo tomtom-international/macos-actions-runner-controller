@@ -144,22 +144,21 @@ func (s *Scheduler) getNodeList() []*types.Node {
 func (s *Scheduler) findNodeSuitsForRunner(runner *types.Runner, nodes []*types.Node) *types.Node {
 	for _, node := range nodes {
 		if node.Status.Condition.Status == types.Ready {
-			cpu := node.Status.Allocatable.Cpu.IntVal
+			cpu := node.Status.Allocatable.CPU.IntVal
 			memory := node.Status.Allocatable.Memory.IntVal
 			runners := node.Status.Allocatable.Runners.IntVal
 
 			for _, binding := range node.Status.Binding {
-				cpu -= binding.Cpu.IntVal
+				cpu -= binding.CPU.IntVal
 				memory -= binding.Memory.IntVal
 				runners += 1
 			}
 
-			if runners > 0 && cpu >= runner.Config.Cpu.IntVal && memory >= runner.Config.Memory.IntVal {
+			if runners > 0 && cpu >= runner.Config.CPU.IntVal && memory >= runner.Config.Memory.IntVal {
 				logger.Infof("Node %s has capacity for runners %s", node.ID, runner.ID)
 				return node
 			}
 		}
-
 	}
 	return nil
 }
@@ -168,7 +167,7 @@ func (s *Scheduler) assignRunner(runner *types.Runner, node *types.Node) error {
 	// TODO: implement ectd lock here for runner and node
 	// update node binding and save node to etcd
 	node.Status.Binding = append(node.Status.Binding, types.ResourceBinding{
-		Cpu:      runner.Config.Cpu,
+		CPU:      runner.Config.CPU,
 		Memory:   runner.Config.Memory,
 		RunnerID: runner.ID,
 	})

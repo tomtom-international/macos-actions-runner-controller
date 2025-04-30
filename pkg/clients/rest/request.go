@@ -139,8 +139,8 @@ func (r *Request) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 		body = bytes.NewReader(r.body)
 	}
 
-	reqUrl := r.URL().String()
-	req, err := http.NewRequestWithContext(ctx, r.method, reqUrl, body)
+	reqURL := r.URL().String()
+	req, err := http.NewRequestWithContext(ctx, r.method, reqURL, body)
 	if err != nil {
 		return nil, err
 	}

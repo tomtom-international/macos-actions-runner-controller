@@ -115,7 +115,7 @@ func (w *heartbeatWatcher) run() {
 				}
 				// TODO: fix concurrent watchers on every replicas
 				logger.Debugf("Heartbeat watcher for node %s timed out.", w.nodeID)
-				node, err := w.nodeManager.GetNodeById(w.nodeID)
+				node, err := w.nodeManager.GetNodeByID(w.nodeID)
 				if err == nil && time.Since(node.Status.Condition.LastHeartbeatTime) > watchTimeoutSeconds*time.Second {
 					if node.Status.Condition.Status == types.Unknown || node.Status.Condition.Status == types.Deregistered {
 						continue

@@ -100,8 +100,6 @@ func (w *worker) stop() {
 }
 
 func (w *worker) doProbe() (keepGoing bool) {
-	//defer func() { recover() }() // Catch panics. Expecting to handle by logging
-
 	if w.probeTarget.Type == pt.ProbeTargetTypeTartRunner {
 		targetState, ok := w.probeManager.stateManager.GetRunnerState(w.probeTarget.ID)
 		if !ok {
@@ -125,10 +123,10 @@ func (w *worker) doProbe() (keepGoing bool) {
 		if int32(time.Since(targetState.StartedAt).Seconds()) < w.spec.InitialDelaySeconds {
 			return true
 		}
-
 	}
+	// TODO: Implement tarter health check for probe by Tarter Controller
 	if w.probeTarget.Type == pt.ProbeTargetTypeTarter {
-		// TODO: Implement tarter health check for probe by Tarter Controller
+		return false
 	}
 
 	result, err := w.probeManager.prober.probe(w.probeType, w.probeTarget)

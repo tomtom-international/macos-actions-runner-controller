@@ -46,7 +46,7 @@ func ListRunnersHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runners from state: %v", err),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -96,7 +96,7 @@ func GetRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runner from state: %v", err),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

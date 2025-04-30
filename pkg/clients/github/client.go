@@ -73,13 +73,13 @@ type ClientConfig struct {
 func New(conf ClientConfig) (*Client, error) {
 	// Validate required configuration
 	if conf.AppID == 0 {
-		return nil, fmt.Errorf("AppID is required")
+		return nil, fmt.Errorf("config parameter AppID is required")
 	}
 	if conf.InstallationID == 0 {
-		return nil, fmt.Errorf("InstallationID is required")
+		return nil, fmt.Errorf("config parameter InstallationID is required")
 	}
 	if conf.Organization == "" {
-		return nil, fmt.Errorf("Organization is required")
+		return nil, fmt.Errorf("config parameter Organization is required")
 	}
 	if len(conf.PrivateKey) == 0 && conf.PrivateKeyFile == "" {
 		return nil, fmt.Errorf("either PrivateKey or PrivateKeyFile must be provided")
@@ -129,12 +129,12 @@ func (c *Client) GetRunnerByName(runnerName string) (*github.Runners, error) {
 	}
 
 	// GitHub client does not have a method to get a runner by name, so we use the REST API
-	githubUrl := fmt.Sprintf(
+	githubURL := fmt.Sprintf(
 		"https://api.github.com/orgs/%v/actions/runners?name=%v",
 		url.QueryEscape(c.config.Organization),
 		url.QueryEscape(runnerName),
 	)
-	req, err := http.NewRequestWithContext(ctx, "GET", githubUrl, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", githubURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request for runner %q: %w", runnerName, err)
 	}

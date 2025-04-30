@@ -42,12 +42,12 @@ const (
 )
 
 // TODO: Migrate ghaRunners to start with runnerConfig
-//type runnerConfig struct {
+// type runnerConfig struct {
 //	Name              string   `json:"name" yaml:"name"`
 //	RunnerGroup       string   `json:"runnerGroup" yaml:"runnerGroup"`
 //	Labels            []string `json:"labels" yaml:"labels"`
 //	RegistrationToken string   `json:"registrationToken" yaml:"registrationToken"`
-//}
+// }
 
 type Client struct {
 	tartPath     string
@@ -108,7 +108,7 @@ func (c *Client) BuildCommand(stdout *bytes.Buffer, stderr *bytes.Buffer, args .
 
 func (c *Client) SetupRunnerConfiguration(
 	nodeName string,
-	runnerId string,
+	runnerID string,
 	tartVMName string,
 	config types.RunnerConfig,
 	registrationToken string) (string, error) {
@@ -116,23 +116,23 @@ func (c *Client) SetupRunnerConfiguration(
 	runnerConfigFolder := path.Join(c.configFolder, tartVMName)
 	err := os.MkdirAll(runnerConfigFolder, 0777)
 	if err != nil {
-		return "", fmt.Errorf("failed to create runner config folder: %v", err)
+		return "", fmt.Errorf("failed to create runner config folder: %s", err.Error())
 	}
 	err = c.cloneRunnerImage(tartVMName, config.BaseImage)
 	if err != nil {
 		return "", err
 	}
-	err = c.setRunnerResources(tartVMName, config.Cpu, config.Memory)
+	err = c.setRunnerResources(tartVMName, config.CPU, config.Memory)
 	if err != nil {
 		return "", err
 	}
 	err = c.setRunnerHosts(runnerConfigFolder, config.RunnerHosts)
 	if err != nil {
-		return "", fmt.Errorf("failed to set runner hosts: %v", err)
+		return "", fmt.Errorf("failed to set runner hosts: %s", err.Error())
 	}
-	err = c.setRunnerHostname(runnerConfigFolder, config.RunnerHostname, runnerId, config.ReleaseVersion)
+	err = c.setRunnerHostname(runnerConfigFolder, config.RunnerHostname, runnerID, config.ReleaseVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to set runner hostname: %v", err)
+		return "", fmt.Errorf("failed to set runner hostname: %s", err.Error())
 	}
 
 	// Temporary solution until we have JIT config.
@@ -141,24 +141,24 @@ func (c *Client) SetupRunnerConfiguration(
 	if config.JitConfig != "" {
 		err = c.SetJITConfig(runnerConfigFolder, config.JitConfig)
 		if err != nil {
-			return "", fmt.Errorf("failed to set JIT config: %v", err)
+			return "", fmt.Errorf("failed to set JIT config: %s", err.Error())
 		}
 	} else {
 		err = c.setRunnerGroup(runnerConfigFolder, config.RunnerGroup)
 		if err != nil {
-			return "", fmt.Errorf("failed to set runner group: %v", err)
+			return "", fmt.Errorf("failed to set runner group: %s", err.Error())
 		}
 		err = c.setRunnerLabels(runnerConfigFolder, config.RunnerLabels)
 		if err != nil {
-			return "", fmt.Errorf("failed to set runner labels: %v", err)
+			return "", fmt.Errorf("failed to set runner labels: %s", err.Error())
 		}
 		err = c.setRegistrationToken(runnerConfigFolder, registrationToken)
 		if err != nil {
-			return "", fmt.Errorf("failed to set runner github registration token: %v", err)
+			return "", fmt.Errorf("failed to set runner github registration token: %s", err.Error())
 		}
-		ghaRunnerName, err = c.setGhaRunnerName(nodeName, runnerConfigFolder, runnerId, config.ReleaseVersion)
+		ghaRunnerName, err = c.setGhaRunnerName(nodeName, runnerConfigFolder, runnerID, config.ReleaseVersion)
 		if err != nil {
-			return "", fmt.Errorf("failed to set github action runner name: %v", err)
+			return "", fmt.Errorf("failed to set github action runner name: %s", err.Error())
 		}
 	}
 	return ghaRunnerName, nil
@@ -237,11 +237,11 @@ func (c *Client) setRunnerHosts(runnerConfigFolder string, runnerHosts []types.R
 	return nil
 }
 
-func (c *Client) setRunnerHostname(runnerConfigFolder string, hostname string, runnerId string, runnerVersion string) error {
+func (c *Client) setRunnerHostname(runnerConfigFolder string, hostname string, runnerID string, runnerVersion string) error {
 	if hostname == "" {
 		timestamp := time.Now().Unix()
 		version := strings.ReplaceAll(runnerVersion, ".", "-")
-		hostname = fmt.Sprintf("runner-%v-%v-v%v.local", runnerId, timestamp, version)
+		hostname = fmt.Sprintf("runner-%v-%v-v%v.local", runnerID, timestamp, version)
 	}
 	return writeToFile(path.Join(runnerConfigFolder, runnerHostname), hostname)
 }
@@ -261,13 +261,13 @@ func (c *Client) setRegistrationToken(runnerConfigFolder string, token string) e
 	return writeToFile(path.Join(runnerConfigFolder, runnerRegistrationTokenFile), token)
 }
 
-func (c *Client) setGhaRunnerName(nodeName string, runnerConfigFolder string, runnerId string, runnerVersion string) (string, error) {
+func (c *Client) setGhaRunnerName(nodeName string, runnerConfigFolder string, runnerID string, runnerVersion string) (string, error) {
 	timestamp := time.Now().Unix()
 	if strings.IndexByte(nodeName, '.') != -1 {
 		nodeName = nodeName[:strings.IndexByte(nodeName, '.')]
 	}
 
-	ghaRunnerName := fmt.Sprintf("%v-%v-%v-v%v", nodeName, runnerId, timestamp, runnerVersion)
+	ghaRunnerName := fmt.Sprintf("%v-%v-%v-v%v", nodeName, runnerID, timestamp, runnerVersion)
 
 	err := writeToFile(path.Join(runnerConfigFolder, runnerNameFile), ghaRunnerName)
 	if err != nil {

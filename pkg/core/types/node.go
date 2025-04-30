@@ -66,14 +66,14 @@ type Status struct {
 }
 
 type Resources struct {
-	Cpu     utils.Int32String `json:"cpu"`
+	CPU     utils.Int32String `json:"cpu"`
 	Memory  utils.Int32String `json:"memory"`
 	Runners utils.Int32String `json:"runners"`
 }
 
 type ResourceBinding struct {
 	RunnerID utils.UID         `json:"runnerId"`
-	Cpu      utils.Int32String `json:"cpu"`
+	CPU      utils.Int32String `json:"cpu"`
 	Memory   utils.Int32String `json:"memory"`
 }
 

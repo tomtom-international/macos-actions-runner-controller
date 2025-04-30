@@ -69,7 +69,7 @@ type Tarter struct {
 	configPath       string
 }
 
-func NewTarter(tarterConfig config.TarterConfig,
+func NewTarter(tarterConfig *config.TarterConfig,
 	appConfig config.Config,
 	configPath string,
 	nodeName string,
@@ -77,7 +77,7 @@ func NewTarter(tarterConfig config.TarterConfig,
 	versionInfo coreVersion.VersionInfo,
 ) (*Tarter, error) {
 
-	ghConfig := config.GetGithubClientConfig(&tarterConfig)
+	ghConfig := config.GetGithubClientConfig(tarterConfig)
 	githubClient, err := ghclient.New(ghConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initiate GitHub client, %v", err.Error())

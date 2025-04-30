@@ -70,7 +70,7 @@ type RunnerConfig struct {
 	RunnerHosts            []RunnerHosts     `json:"hosts" yaml:"hosts"`
 	RunnerLabels           []string          `json:"labels" yaml:"labels"`
 	Memory                 utils.Int32String `json:"memory" yaml:"memory"`
-	Cpu                    utils.Int32String `json:"cpu" yaml:"cpu"`
+	CPU                    utils.Int32String `json:"cpu" yaml:"cpu"`
 	SoftnetNetwork         SoftnetNetwork    `json:"softnetNetwork" yaml:"softnetNetwork"`
 	NoGraphics             bool              `json:"noGraphics" yaml:"noGraphics"`
 	DisableRootDiskOptions bool              `json:"disableRootDiskOptions" yaml:"disableRootDiskOptions"`

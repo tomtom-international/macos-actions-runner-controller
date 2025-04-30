@@ -27,7 +27,6 @@ func TestFromInt32(t *testing.T) {
 	i := FromInt32(543)
 	assert.Equal(t, Int, i.Type, "Expected Type=Int")
 	assert.Equal(t, int32(543), i.IntVal, "Expected IntVal=543")
-
 }
 
 func TestFromString(t *testing.T) {
@@ -59,11 +58,11 @@ func TestIntOrStringUnmarshalJSON(t *testing.T) {
 
 func TestIntOrStringMarshalJSON(t *testing.T) {
 	cases := []struct {
-		input  Int32String
 		result string
+		input  Int32String
 	}{
-		{FromInt32(543), "{\"val\":543}"},
-		{FromString("543"), "{\"val\":\"543\"}"},
+		{"{\"val\":543}", FromInt32(543)},
+		{"{\"val\":\"543\"}", FromString("543")},
 	}
 
 	for _, c := range cases {

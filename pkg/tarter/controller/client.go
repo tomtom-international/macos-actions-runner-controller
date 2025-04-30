@@ -34,7 +34,7 @@ type Client struct {
 
 func NewClient(config config.ControllerConfig) (*Client, error) {
 	httpClient := &http.Client{}
-	restClient, err := rest.NewRESTClient(config.Server, config.ApiVersionPath, "", httpClient)
+	restClient, err := rest.NewRESTClient(config.Server, config.APIVersionPath, "", httpClient)
 
 	if err != nil {
 		return nil, err

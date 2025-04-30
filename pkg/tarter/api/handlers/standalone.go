@@ -35,7 +35,7 @@ func GetStandaloneConfigHandler(t *tarter.Tarter) http.HandlerFunc {
 				Message: fmt.Sprintf("Failed to marshal standalone config: %v", err),
 			}
 
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

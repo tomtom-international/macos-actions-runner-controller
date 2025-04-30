@@ -114,11 +114,11 @@ func (m *Manager) removeNodeHeartbeatWatcher(nodeID utils.UID) {
 	delete(m.heartbeatWatchers, nodeID)
 }
 
-func (m *Manager) GetNodeById(nodeID utils.UID) (*types.Node, error) {
+func (m *Manager) GetNodeByID(nodeID utils.UID) (*types.Node, error) {
 	key := path.Join("/", m.etcdKeyPrefix, string(nodeID))
 	rawNode, err := m.etcdClient.Get(key)
 	if err != nil {
-		logger.Errorf("GetNodeById failed to get Node %s from etcd, error: %s", nodeID, err)
+		logger.Errorf("GetNodeByID failed to get Node %s from etcd, error: %s", nodeID, err)
 		return nil, err
 	}
 	if rawNode == "" {
@@ -127,7 +127,7 @@ func (m *Manager) GetNodeById(nodeID utils.UID) (*types.Node, error) {
 	var node types.Node
 	err = json.Unmarshal([]byte(rawNode), &node)
 	if err != nil {
-		logger.Errorf("GetNodeById failed to unmarshal Node %s, error: %s", nodeID, err)
+		logger.Errorf("GetNodeByID failed to unmarshal Node %s, error: %s", nodeID, err)
 		return nil, err
 	}
 

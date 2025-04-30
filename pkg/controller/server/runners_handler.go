@@ -49,7 +49,7 @@ func GetRunnerListHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to list runners: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -92,7 +92,7 @@ func GetRunnerHandler(c ControllerInterface) http.HandlerFunc {
 					Status:  http.StatusNotFound,
 					Message: fmt.Sprintf("Runner %s not found", runnerID),
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -107,7 +107,7 @@ func GetRunnerHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to get runner: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -146,7 +146,7 @@ func GetRunnerStatusUpdateHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Failed to read runner status update request",
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -160,7 +160,7 @@ func GetRunnerStatusUpdateHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to update runner status: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -172,7 +172,7 @@ func GetRunnerStatusUpdateHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Runner %s not found", runnerID),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

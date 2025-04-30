@@ -102,14 +102,14 @@ func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (typ
 	}
 	if existingNode != nil {
 		if existingNode.Status.Condition.Status == types.Disabled {
-			logger.Warnf("Recieved node registration request for disabled node %s.", request.NodeName)
+			logger.Warnf("Received node registration request for disabled node %s.", request.NodeName)
 			return types.NodeDisabled, existingNode, fmt.Errorf("node %s disabled", request.NodeName)
 		}
 		if existingNode.Status.Condition.Status == types.Deregistered {
-			logger.Warnf("Recieved node registration request for deregistered node %s. Decline node registration", request.NodeName)
+			logger.Warnf("Received node registration request for deregistered node %s. Decline node registration", request.NodeName)
 			return types.NodeDeregistered, existingNode, fmt.Errorf("node %s is deregistered. Waiting to be removed", request.NodeName)
 		} else {
-			logger.Warnf("Recieved node registration request for active node %s", request.NodeName)
+			logger.Warnf("Received node registration request for active node %s", request.NodeName)
 			c.nodePoolManager.AddNodeHeartbeatWatcher(existingNode.ID)
 			return types.NodeAlreadyExists, existingNode, fmt.Errorf("node %s already registered", request.NodeName)
 		}
@@ -142,7 +142,7 @@ func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (typ
 
 func (c *Controller) ProcessNodeHeartBeat(nodeID utils.UID, heartbeat types.NodeHeartbeatRequest) (types.NodeHeartbeatStatus, *types.Node, error) {
 	// check by Node ID if node exists in etcd
-	registeredNode, err := c.nodePoolManager.GetNodeById(nodeID)
+	registeredNode, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node with id %s, error: %v", nodeID, err)
 		return types.HeartbeatFailed, nil, err
@@ -189,7 +189,7 @@ func (c *Controller) ProcessNodeHeartBeat(nodeID utils.UID, heartbeat types.Node
 }
 
 func (c *Controller) DeregisterNode(nodeID utils.UID) (*types.Node, error) {
-	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	node, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
 		return nil, err
@@ -213,13 +213,12 @@ func (c *Controller) DeregisterNode(nodeID utils.UID) (*types.Node, error) {
 }
 
 func (c *Controller) GetNodeInfo(nodeID utils.UID) (*types.Node, error) {
-	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	node, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
 		return nil, err
 	}
 	return node, nil
-
 }
 
 func (c *Controller) GetNodeList() ([]types.Node, error) {
@@ -232,7 +231,7 @@ func (c *Controller) GetNodeList() ([]types.Node, error) {
 }
 
 func (c *Controller) DisableNode(nodeID utils.UID) (*types.Node, error) {
-	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	node, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
 		return nil, err
@@ -251,11 +250,10 @@ func (c *Controller) DisableNode(nodeID utils.UID) (*types.Node, error) {
 		}
 	}
 	return node, nil
-
 }
 
 func (c *Controller) ReEnable(nodeID utils.UID) (*types.Node, error) {
-	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	node, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node %s, error: %v", nodeID, err)
 		return nil, err
@@ -274,7 +272,6 @@ func (c *Controller) ReEnable(nodeID utils.UID) (*types.Node, error) {
 		}
 	}
 	return node, nil
-
 }
 
 func (c *Controller) RemoveNodesWatcherHandler(conn *websocket.Conn) {
@@ -285,7 +282,7 @@ func (c *Controller) AddNodesWatcher(conn *websocket.Conn, notificationChan chan
 	c.nodePoolManager.AddNodesWatcher(conn, notificationChan)
 }
 
-func (c *Controller) UpdateDefaultRunnerConfig(runnerConfig types.RunnerConfig) error {
+func (c *Controller) UpdateDefaultRunnerConfig(runnerConfig *types.RunnerConfig) error {
 	// TODO: implement config update
 	// 1) validate runner config
 	// 2) save runner config to etcd
@@ -323,7 +320,7 @@ func (c *Controller) createRunner(runner *types.Runner) error {
 }
 
 func (c *Controller) GetRunnerInfo(runnerID utils.UID) (*types.Runner, error) {
-	runner, err := c.runnerManager.GetRunnerById(runnerID)
+	runner, err := c.runnerManager.GetRunnerByID(runnerID)
 	if err != nil {
 		logger.Errorf("Failed to get runner %s, error: %v", runnerID, err)
 		return nil, err
@@ -353,9 +350,7 @@ func (c *Controller) checkRegisteredNodes() {
 	}
 
 	for _, node := range nodes {
-		if node.Status.Condition.Healthy &&
-			node.Status.Condition.LastHeartbeatTime.Add(1*time.Minute).Before(time.Now()) {
-
+		if node.Status.Condition.Healthy && node.Status.Condition.LastHeartbeatTime.Add(1*time.Minute).Before(time.Now()) {
 			node.Status.Condition.Healthy = false
 			node.Status.Condition.Status = types.Unknown
 			node.Status.Condition.Message = "Node heartbeat timeout exceeded on initial check"
@@ -441,7 +436,7 @@ func (c *Controller) RemoveRunnersWatcherHandler(conn *websocket.Conn) {
 
 func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate) (*types.Runner, error) {
 	logger.Debugf("Processing runner status update %+v", update)
-	runner, err := c.runnerManager.GetRunnerById(update.ID)
+	runner, err := c.runnerManager.GetRunnerByID(update.ID)
 	if err != nil {
 		logger.Errorf("Failed to get runner %s, error: %v", update.ID, err)
 		return nil, fmt.Errorf("failed to get runner %s", update.ID)
@@ -492,7 +487,7 @@ func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate)
 
 func (c *Controller) removeNodeBinding(nodeID, runnerID utils.UID) error {
 	logger.Debugf("Removing runner binding from node %s", nodeID)
-	node, err := c.nodePoolManager.GetNodeById(nodeID)
+	node, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
 		logger.Errorf("Failed to get node %s runner assign to, error: %v", nodeID, err)
 		return fmt.Errorf("failed to get node %s runner assign to", nodeID)

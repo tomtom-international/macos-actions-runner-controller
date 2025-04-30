@@ -85,8 +85,8 @@ func (m *Manager) SaveRunnerWithLease(runner *types.Runner) error {
 	return nil
 }
 
-// GetRunnerById gets runner from Etcd by ID
-func (m *Manager) GetRunnerById(runnerID utils.UID) (*types.Runner, error) {
+// GetRunnerByID gets runner from Etcd by ID
+func (m *Manager) GetRunnerByID(runnerID utils.UID) (*types.Runner, error) {
 	key := path.Join("/", m.etcdKeyPrefix, string(runnerID))
 	rawRunner, err := m.etcdClient.Get(key)
 	if err != nil {
@@ -125,7 +125,7 @@ func (m *Manager) GetRunners() ([]types.Runner, error) {
 	return runners, nil
 }
 
-func (m *Manager) GetRunnerByCreateRequestID(requestId string) (*types.Runner, error) {
+func (m *Manager) GetRunnerByCreateRequestID(requestID string) (*types.Runner, error) {
 	key := path.Join("/", m.etcdKeyPrefix)
 	rawRunners, err := m.etcdClient.GetByPrefix(key)
 	if err != nil {
@@ -138,7 +138,7 @@ func (m *Manager) GetRunnerByCreateRequestID(requestId string) (*types.Runner, e
 			logger.Errorf("GetRunnerByCreateRequestID failed to unmarshal Runner, error: %s", err)
 			return nil, err
 		}
-		if runner.Condition.CreateRequestID == requestId {
+		if runner.Condition.CreateRequestID == requestID {
 			return &runner, nil
 		}
 	}

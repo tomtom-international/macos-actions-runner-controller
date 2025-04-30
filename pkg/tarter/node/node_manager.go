@@ -72,16 +72,12 @@ func (m *Manager) registerWithController() {
 
 	for {
 		time.Sleep(step)
-		step = step * 2
+		step *= 2
 		if step >= 7*time.Second {
 			step = 7 * time.Second
 		}
 
-		node, err := m.initialNode()
-		if err != nil {
-			logger.Errorf("Unable to construct Node object for Tarter. Error: %v", err)
-			continue
-		}
+		node := m.initialNode()
 
 		logger.Infof("Trying to register node %s", node.Name)
 		registered := m.tryRegisterWithController(node)
@@ -116,7 +112,8 @@ func (m *Manager) tryRegisterWithController(node *types.Node) bool {
 
 	logger.Infof("Node %s was previously registered", node.Name)
 
-	// TODO: Check if existingNode registered by Tarter of this node. Controller should have unique information about Tarter that registered the node.
+	// TODO: Check if existingNode registered by Tarter of this node.
+	// Controller should have unique information about Tarter that registered the node.
 
 	// TODO: Patch node if it differs from existingNode and send it to Controller.
 
@@ -180,7 +177,6 @@ func (m *Manager) updateNodeStatus(ctx context.Context) error {
 // sendHeartbeat tries to update node status to Tarter Controller if there is any
 // change or enough time passed from the last sync.
 func (m *Manager) sendHeartbeat(ctx context.Context, node *types.Node) error {
-	var err error
 	updatedNode, err := m.updateNode(*node)
 
 	// TODO: Add heartbeat interval check
@@ -214,13 +210,13 @@ func (m *Manager) sendHeartbeat(ctx context.Context, node *types.Node) error {
 
 // initialNode creates a new Node object with the initial status.
 // Safe to call multiple times, as it is not modifying m.node
-func (m *Manager) initialNode() (*types.Node, error) {
+func (m *Manager) initialNode() *types.Node {
 	node := types.Node{}
 	node.Name = m.nodeInfo.Address.Hostname
 	node.NodeInfo = m.nodeInfo
 	node.Status.Capacity = m.nodeCapacity
 	node.Status.Condition.Status = types.NotReady
-	return &node, nil
+	return &node
 }
 
 // updateNode updates node allocatable resources and status.
@@ -230,7 +226,7 @@ func (m *Manager) updateNode(node types.Node) (types.Node, error) {
 	allocatableResources := m.node.Status.Capacity
 	activeRunners := m.stateManager.GetActiveRunners()
 	for _, runner := range activeRunners {
-		allocatableResources.Cpu.IntVal -= runner.Config.Cpu.IntVal
+		allocatableResources.CPU.IntVal -= runner.Config.CPU.IntVal
 		allocatableResources.Memory.IntVal -= runner.Config.Memory.IntVal
 		allocatableResources.Runners.IntVal -= 1
 	}
@@ -250,7 +246,7 @@ func (m *Manager) processBindingRunners(ctx context.Context, runners []types.Res
 		}
 
 		// checking if runner can fit into node
-		if runnerInfo.Config.Cpu.IntVal > m.node.Status.Allocatable.Cpu.IntVal ||
+		if runnerInfo.Config.CPU.IntVal > m.node.Status.Allocatable.CPU.IntVal ||
 			runnerInfo.Config.Memory.IntVal > m.node.Status.Allocatable.Memory.IntVal {
 			logger.Errorf("Binded runner %s cannot fit into node %s", runner.RunnerID, m.node.Name)
 			continue

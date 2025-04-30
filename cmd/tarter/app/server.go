@@ -103,7 +103,7 @@ func NewTarter() (*tarter.Tarter, *mux.Router, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	nodeIp, err := utils.GetNodeIP()
+	nodeIP, err := utils.GetNodeIP()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -116,7 +116,7 @@ func NewTarter() (*tarter.Tarter, *mux.Router, error) {
 		managedConfig := config.ReadManagedConfiguration(configFile)
 		appConfig = &managedConfig
 	}
-	t, err := tarter.NewTarter(tarterConfig, appConfig, configFile, nodeName, nodeIp, versionInfo)
+	t, err := tarter.NewTarter(&tarterConfig, appConfig, configFile, nodeName, nodeIP, versionInfo)
 	if err != nil {
 		return nil, nil, err
 	}

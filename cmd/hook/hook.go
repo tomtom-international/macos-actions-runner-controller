@@ -54,7 +54,7 @@ type hookConfig struct {
 	GhaRunnerGroup      string `env:"GHA_RUNNER_GROUP"`
 	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
 	GhAppOrg            string `env:"GH_APP_ORG"`
-	GhAppId             int    `env:"GH_APP_ID"`
+	GhAppID             int    `env:"GH_APP_ID"`
 	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
 }
 
@@ -77,7 +77,7 @@ func readRunnerConfig() {
 
 func initGithubClient() {
 	ghConfig := ghclient.ClientConfig{
-		AppID:          int64(cfg.GhAppId),
+		AppID:          int64(cfg.GhAppID),
 		InstallationID: int64(cfg.GhAppInstallationID),
 		PrivateKey:     []byte(cfg.GhAppPrivateKey),
 		Organization:   cfg.GhAppOrg,
@@ -91,7 +91,8 @@ func initGithubClient() {
 
 func main() {
 	info := coreVersion.GetVersionInfo()
-	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
+	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n",
+		info.Version, info.BuildDate, info.GitCommit, info.Platform)
 	log.Println("Reading configuration")
 	loadHookConfiguration()
 	readRunnerConfig()
@@ -140,7 +141,7 @@ runnerStatusCheckLoop:
 	}
 
 	log.Println("Hook finished")
-	os.Exit(0)
+	return
 }
 
 func checkStatus(ghaRunnerName string) bool {

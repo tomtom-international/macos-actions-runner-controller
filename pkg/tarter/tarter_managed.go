@@ -45,7 +45,7 @@ func (t *Tarter) StartManagedTarter() {
 		logger.Fatalf("Failed to get node info: %s", err.Error())
 	}
 	nodeCapacity := types.Resources{
-		Cpu:     t.config.GetNodeCapacity().Cpu,
+		CPU:     t.config.GetNodeCapacity().CPU,
 		Memory:  t.config.GetNodeCapacity().Memory,
 		Runners: t.config.GetNodeCapacity().MaxActiveRunners,
 	}
@@ -82,7 +82,6 @@ func (t *Tarter) StartManagedTarter() {
 	}
 
 	t.startEventHandling(eventHandlers)
-
 }
 
 func (t *Tarter) getNodeInfo() (*types.NodeInfo, error) {

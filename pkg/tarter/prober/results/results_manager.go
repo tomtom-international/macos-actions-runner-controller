@@ -56,5 +56,4 @@ func (m *runnerProbeResultManager) SetResult(runnerID utils.UID, result probe.Re
 	case pt.Startup:
 		m.eventBus.Publish(events.Event{Type: tt.EventRunnerStartupHealthCheck, Payload: payload})
 	}
-
 }
