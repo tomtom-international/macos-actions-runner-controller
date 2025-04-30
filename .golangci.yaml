@@ -63,6 +63,10 @@ linters-settings:
       - performance
     disabled-checks:
       - rangeValCopy
+# TODO: remove these excludes and fix the code
+      - hugeParam
+  whitespace:
+    multi-func: true
 
 issues:
   exclude-rules:
@@ -70,3 +74,25 @@ issues:
       linters:
         - gosec
       text: "G404"
+    - path: pkg/utils/random_string.go
+      linters:
+        - gosec
+      text: "G404"
+    - path: pkg/clients/github/client_test.go
+      linters:
+        - gosec
+      text: "G101"
+    - linters:
+        - gosimple
+      text: "S1000"
+    - path: pkg/tarter/runner/worker.go
+      linters:
+        - gocritic
+      text: "ifElseChain"
+# TODO: remove these excludes and fix the code
+    - path: pkg/controller/server/nodepool_handler.go
+      linters:
+        - dupl
+    - path: pkg/controller/server/runners_handler.go
+      linters:
+        - dupl

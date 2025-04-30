@@ -19,14 +19,15 @@ package runners
 import (
 	"context"
 	"encoding/json"
+	"path"
+	"sync"
+	"time"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"path"
-	"sync"
-	"time"
 )
 
 type Manager struct {

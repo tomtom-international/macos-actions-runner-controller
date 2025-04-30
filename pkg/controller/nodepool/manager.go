@@ -19,13 +19,14 @@ package nodepool
 import (
 	"context"
 	"encoding/json"
+	"path"
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"path"
-	"sync"
 )
 
 type Manager struct {

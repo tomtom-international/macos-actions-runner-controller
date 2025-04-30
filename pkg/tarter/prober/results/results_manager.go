@@ -17,13 +17,14 @@
 package results
 
 import (
+	"sync"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/results"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/events"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"sync"
 )
 
 // Prober results manager implementation.

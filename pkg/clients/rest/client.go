@@ -65,6 +65,7 @@ func NewRESTClient(host string, pathPrefix string, contentType string, client *h
 		baseURL:     baseURL,
 		Client:      client,
 		contentType: contentType,
+		pathPrefix:  pathPrefix,
 	}, nil
 }
 

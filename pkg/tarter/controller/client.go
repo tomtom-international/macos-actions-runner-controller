@@ -20,12 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/rest"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net/http"
 )
 
 type Client struct {

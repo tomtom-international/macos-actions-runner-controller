@@ -17,11 +17,10 @@
 package api
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/api/handlers"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
-
-	"github.com/gorilla/mux"
 )
 
 func SetupRoutes(r *mux.Router, sm *state.StateManager) {
@@ -32,6 +31,7 @@ func SetupRoutes(r *mux.Router, sm *state.StateManager) {
 
 func SetupSysRoutes(r *mux.Router, t *tarter.Tarter) {
 	r.HandleFunc("/sys/workers", handlers.ListRunnerWorkersHandler(t)).Methods("GET")
+	r.HandleFunc("/sys/workers-count", handlers.GetRunnerWorkersCountHandler(t)).Methods("GET")
 }
 
 func SetupStandaloneTarterRoutes(r *mux.Router, t *tarter.Tarter) {

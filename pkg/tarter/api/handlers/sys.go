@@ -19,9 +19,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter"
-	"net/http"
 )
 
 func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
@@ -33,7 +34,7 @@ func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			response := core.SimpleResponse{
 				Status:  http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to marshal runner workers: %v", err),
+				Message: fmt.Sprintf("Failed to marshal runner workers: %s", err.Error()),
 			}
 			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
@@ -42,6 +43,18 @@ func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
 			return
 		}
 		_, err = w.Write(resp)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func GetRunnerWorkersCountHandler(t *tarter.Tarter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := t.GetWorkersCount()
+		w.Header().Set("Content-Type", "application/json")
+		resp := []byte(fmt.Sprintf("{\"count\": %d}", c))
+		_, err := w.Write(resp)
 		if err != nil {
 			return
 		}

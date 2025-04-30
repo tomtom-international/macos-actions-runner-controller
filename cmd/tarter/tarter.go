@@ -17,8 +17,9 @@
 package main
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/cmd/tarter/app"
 	"os"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/cmd/tarter/app"
 )
 
 func main() {

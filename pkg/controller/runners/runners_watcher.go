@@ -20,15 +20,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"strings"
-	"sync"
-	"time"
 )
 
 type runnersWatcher struct {
@@ -49,6 +50,7 @@ func newRunnersWatcher(
 	key string,
 	manager *Manager,
 ) *runnersWatcher {
+
 	return &runnersWatcher{
 		subscribers: make(map[*websocket.Conn]chan types.WatcherRunnersUpdate),
 		ctx:         ctx,
@@ -90,7 +92,7 @@ func (w *runnersWatcher) watch() {
 						err := json.Unmarshal(event.Kv.Value, &runner)
 						if err != nil {
 							logger.Debugf("Raw event value: %+v", event.Kv)
-							w.etcdClient.ErrChan <- fmt.Errorf("failed to unmarshal runners watcher Put event value. Error: %v", err)
+							w.etcdClient.ErrChan <- fmt.Errorf("failed to unmarshal runners watcher Put event value. Error: %s", err.Error())
 							continue
 						}
 						runnersUpdate.UpdatedRunners = append(runnersUpdate.UpdatedRunners, runner)

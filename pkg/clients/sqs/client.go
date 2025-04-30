@@ -18,12 +18,13 @@ package sqs
 
 import (
 	"context"
+	"math/rand"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"math/rand"
-	"time"
 )
 
 type SQSClient struct {

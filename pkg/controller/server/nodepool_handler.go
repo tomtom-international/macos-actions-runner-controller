@@ -19,11 +19,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net/http"
 )
 
 func GetNodeListHandler(c ControllerInterface) http.HandlerFunc {
@@ -86,7 +87,7 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				response := types.NodeRegistrationResponse{
 					RegistrationStatus: status,
-					Message:            fmt.Sprintf("Node is nil"),
+					Message:            "Node is nil",
 				}
 				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
@@ -100,7 +101,7 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 					Node:               *node,
 					Message:            fmt.Sprintf("Node %s already registered or deregistered for scheduling", node.Name),
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -244,7 +245,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Node %s not found", nodeID),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

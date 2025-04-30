@@ -20,13 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"path"
-	"time"
 )
 
 const (
@@ -48,6 +49,7 @@ func newHeartbeatWatcher(
 	etcdClient *etcd.EtcdClient,
 	nodeManager *Manager,
 ) *heartbeatWatcher {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	key := path.Join("/", nodeManager.etcdKeyPrefix, string(nodeID))
 
@@ -62,6 +64,8 @@ func newHeartbeatWatcher(
 }
 
 // TODO: consider to rely on heartbeat request instead of etcd watcher because it triggers on every node change
+//
+//gocyclo:ignore
 func (w *heartbeatWatcher) run() {
 	defer func() {
 		logger.Debugf("Stopping heartbeat watcher for node %s", w.nodeID)
@@ -98,7 +102,6 @@ func (w *heartbeatWatcher) run() {
 							continue
 						}
 						if node.Status.Condition.LastHeartbeatTime.Add(3 * time.Second).After(time.Now()) {
-							//logger.Debugf("Received heartbeat for node %s.", w.nodeID)
 							w.pause = false
 						} else {
 							continue

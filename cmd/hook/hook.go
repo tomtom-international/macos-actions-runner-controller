@@ -20,17 +20,18 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/caarlos0/env"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"gopkg.in/yaml.v3"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 const (
@@ -141,7 +142,6 @@ runnerStatusCheckLoop:
 	}
 
 	log.Println("Hook finished")
-	return
 }
 
 func checkStatus(ghaRunnerName string) bool {

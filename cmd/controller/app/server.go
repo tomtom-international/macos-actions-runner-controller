@@ -20,16 +20,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+
 	"github.com/spf13/cobra"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 var (

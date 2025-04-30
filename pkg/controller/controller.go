@@ -21,6 +21,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
@@ -31,9 +35,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net"
-	"sync"
-	"time"
 )
 
 const (
@@ -52,8 +53,11 @@ type Controller struct {
 func NewController(configuration config.ControllerConfig) (*Controller, error) {
 	etcdClient, err := etcd.NewEtcdClient(
 		configuration.EtcdEndpoints, func(err error) {
-			logger.Errorf("Etcd Error: %v", err)
+			logger.Errorf("Etcd Error: %s", err.Error())
 		})
+	if err != nil {
+		return nil, err
+	}
 	sqsClient, err := sqs.NewClient(configuration.AwsRegion, configuration.AwsRunnerRequestSQSUrl)
 	if err != nil {
 		return nil, err
@@ -140,7 +144,11 @@ func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (typ
 	return types.Registered, &newNode, nil
 }
 
-func (c *Controller) ProcessNodeHeartBeat(nodeID utils.UID, heartbeat types.NodeHeartbeatRequest) (types.NodeHeartbeatStatus, *types.Node, error) {
+func (c *Controller) ProcessNodeHeartBeat(
+	nodeID utils.UID,
+	heartbeat types.NodeHeartbeatRequest,
+) (types.NodeHeartbeatStatus, *types.Node, error) {
+
 	// check by Node ID if node exists in etcd
 	registeredNode, err := c.nodePoolManager.GetNodeByID(nodeID)
 	if err != nil {
@@ -148,7 +156,7 @@ func (c *Controller) ProcessNodeHeartBeat(nodeID utils.UID, heartbeat types.Node
 		return types.HeartbeatFailed, nil, err
 	}
 	if registeredNode == nil {
-		logger.Errorf("Recieved heartbeat for non-existing Node %s", nodeID)
+		logger.Errorf("Received heartbeat for non-existing Node %s", nodeID)
 		return types.HeartbeatNodeNotFound, nil, nil
 	}
 

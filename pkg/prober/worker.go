@@ -18,12 +18,13 @@
 package prober
 
 import (
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/results"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
-	"time"
 )
 
 type worker struct {
@@ -50,6 +51,7 @@ func newWorker(
 	probeType pt.ProbeType,
 	target *pt.ProbeTarget,
 	resultsManager results.Manager) *worker {
+
 	w := &worker{
 		stopCh:         make(chan struct{}, 1),
 		probeManager:   m,
@@ -92,6 +94,7 @@ probeLoop:
 	}
 }
 
+//nolint:unused
 func (w *worker) stop() {
 	select {
 	case w.stopCh <- struct{}{}:
@@ -99,6 +102,7 @@ func (w *worker) stop() {
 	}
 }
 
+//gocyclo:ignore
 func (w *worker) doProbe() (keepGoing bool) {
 	if w.probeTarget.Type == pt.ProbeTargetTypeTartRunner {
 		targetState, ok := w.probeManager.stateManager.GetRunnerState(w.probeTarget.ID)

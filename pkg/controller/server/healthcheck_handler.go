@@ -18,8 +18,9 @@ package server
 
 import (
 	"encoding/json"
-	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"net/http"
+
+	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 )
 
 func HealthCheckHandler() http.HandlerFunc {

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type EtcdClient struct {
@@ -114,7 +114,7 @@ func (e *EtcdClient) Close() error {
 	e.cancel()
 
 	if err := e.client.Close(); err != nil {
-		return fmt.Errorf("failed to close etcd client: %v", err)
+		return fmt.Errorf("failed to close etcd client: %s", err.Error())
 	}
 	close(e.ErrChan)
 	return nil

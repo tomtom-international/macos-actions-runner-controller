@@ -19,6 +19,8 @@ package tarter
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/controller"
@@ -26,7 +28,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/node"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"time"
 )
 
 func (t *Tarter) StartManagedTarter() {
@@ -87,11 +88,11 @@ func (t *Tarter) StartManagedTarter() {
 func (t *Tarter) getNodeInfo() (*types.NodeInfo, error) {
 	tartVersion, err := t.tartClient.GetTartVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Tart version: %v", err)
+		return nil, fmt.Errorf("failed to get Tart version: %s", err.Error())
 	}
 	hostOSVersion, err := utils.GetMacOSVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get host OS version: %v", err)
+		return nil, fmt.Errorf("failed to get host OS version: %s", err.Error())
 	}
 	return &types.NodeInfo{
 		TarterVersion: t.versionInfo.Version,

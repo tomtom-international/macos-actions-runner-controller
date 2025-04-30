@@ -17,8 +17,9 @@
 package types
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"time"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 
 type NodeStatus string

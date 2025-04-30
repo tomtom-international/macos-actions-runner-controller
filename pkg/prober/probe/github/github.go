@@ -18,6 +18,7 @@ package github
 
 import (
 	"fmt"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 )

@@ -19,13 +19,14 @@ package prober
 
 import (
 	"fmt"
+	"time"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	githubprobe "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe/github"
 	httpprobe "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe/http"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
-	"time"
 )
 
 const maxProbeRetries = 3

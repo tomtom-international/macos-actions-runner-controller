@@ -17,9 +17,10 @@
 package types
 
 import (
+	"time"
+
 	t "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"time"
 )
 
 type RunnerStatus string

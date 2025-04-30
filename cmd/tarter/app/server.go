@@ -19,6 +19,10 @@ package app
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	coreApi "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
@@ -28,8 +32,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net/http"
-	"os"
 )
 
 var (
@@ -140,5 +142,16 @@ func Run(r *mux.Router, t *tarter.Tarter) error {
 	case config.TarterMode(tarterConfig.Mode) == config.ManagedMode:
 		t.StartManagedTarter()
 	}
-	return http.ListenAndServe(fmt.Sprintf(":%s", tarterConfig.Port), r)
+
+	// Create a server with timeouts
+	srv := &http.Server{
+		Addr:           fmt.Sprintf(":%s", tarterConfig.Port),
+		Handler:        r,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    120 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	return srv.ListenAndServe()
 }

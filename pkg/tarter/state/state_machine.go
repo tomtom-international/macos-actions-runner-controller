@@ -17,15 +17,16 @@
 package state
 
 import (
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/events"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"strings"
-	"sync"
-	"time"
 )
 
 const (

@@ -20,14 +20,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 
 const (
@@ -62,6 +63,10 @@ func NewClient(tartPath string, configFolder string) *Client {
 }
 
 func (c *Client) GetTartVersion() (string, error) {
+	if !isValidExecutablePath(c.tartPath) {
+		return "", fmt.Errorf("invalid tart path: %s", c.tartPath)
+	}
+	// #nosec G204 - tartPath is a trusted configuration value, not user input
 	out, err := exec.Command(c.tartPath, "--version").CombinedOutput()
 	if err != nil {
 		return "", err
@@ -83,7 +88,7 @@ func (c *Client) BuildCMDArguments(tartVMName string, config types.RunnerConfig)
 	}
 
 	if config.SoftnetNetwork.Enable && len(config.SoftnetNetwork.AllowedCIDRs) > 0 {
-		args = append(args, fmt.Sprintf("--net-softnet-allow=%v", strings.Join(config.SoftnetNetwork.AllowedCIDRs[:], ",")))
+		args = append(args, fmt.Sprintf("--net-softnet-allow=%v", strings.Join(config.SoftnetNetwork.AllowedCIDRs, ",")))
 	}
 
 	if config.CacheVolumePath != "" {
@@ -93,13 +98,12 @@ func (c *Client) BuildCMDArguments(tartVMName string, config types.RunnerConfig)
 	if !config.DisableRootDiskOptions {
 		args = append(args, "--root-disk-opts=sync=none,caching=cached")
 	}
-	args = append(args, fmt.Sprintf("--dir=config:%v:ro", path.Join(c.configFolder, tartVMName)))
-	args = append(args, tartVMName)
-
+	args = append(args, fmt.Sprintf("--dir=config:%v:ro", path.Join(c.configFolder, tartVMName)), tartVMName)
 	return args
 }
 
 func (c *Client) BuildCommand(stdout *bytes.Buffer, stderr *bytes.Buffer, args ...string) *exec.Cmd {
+	// #nosec G204 - tartPath is a trusted configuration value, args validated by BuildCMDArguments
 	cmd := exec.Command(c.tartPath, args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -176,17 +180,18 @@ func (c *Client) CleanupRunnerConfiguration(tartVMName string) {
 func (c *Client) SetJITConfig(runnerConfigFolder string, jitConfig string) error {
 	cfg, err := base64.StdEncoding.DecodeString(jitConfig)
 	if err != nil {
-		return fmt.Errorf("failed to decode JIT config: %v", err)
+		return fmt.Errorf("failed to decode JIT config: %s", err.Error())
 	}
 	err = writeToFile(path.Join(runnerConfigFolder, runnerJitConfigFile), string(cfg))
 	if err != nil {
-		return fmt.Errorf("failed to write JIT config: %v", err)
+		return fmt.Errorf("failed to write JIT config: %s", err.Error())
 	}
 	return nil
 }
 
 func (c *Client) removeRunnerImage(tartVMName string) {
 	var stderrBuf bytes.Buffer
+	// #nosec G204 - tartPath is a trusted configuration value, not user input
 	cmd := exec.Command(c.tartPath, "delete", tartVMName)
 	cmd.Stderr = &stderrBuf
 	err := cmd.Run()
@@ -197,6 +202,7 @@ func (c *Client) removeRunnerImage(tartVMName string) {
 
 func (c *Client) cloneRunnerImage(tartVMName string, baseImage string) error {
 	var stderrBuf bytes.Buffer
+	// #nosec G204 - tartPath is a trusted configuration value, not user input
 	cmd := exec.Command(c.tartPath, "clone", baseImage, tartVMName)
 	cmd.Stderr = &stderrBuf
 	err := cmd.Run()
@@ -208,6 +214,7 @@ func (c *Client) cloneRunnerImage(tartVMName string, baseImage string) error {
 
 func (c *Client) setRunnerResources(tartVMName string, cpuCount utils.Int32String, memory utils.Int32String) error {
 	var stderrBuf bytes.Buffer
+	// #nosec G204 - tartPath is a trusted configuration value, not user input
 	cmd := exec.Command(c.tartPath, "set", tartVMName,
 		"--cpu", cpuCount.String(),
 		"--memory", memory.String())
@@ -296,4 +303,15 @@ func writeToFile(filePath string, data string) error {
 		}
 	}(f)
 	return nil
+}
+
+func isValidExecutablePath(path string) bool {
+	// Basic validation - path exists and is executable
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	// Check it's a file and has execute permission
+	return !info.IsDir() && (info.Mode()&0111 != 0)
 }

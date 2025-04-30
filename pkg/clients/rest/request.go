@@ -85,6 +85,11 @@ func (r *Request) SubPath(subPath string) *Request {
 	return r
 }
 
+func (r *Request) Error(err error) *Request {
+	r.err = err
+	return r
+}
+
 func (r *Request) Body(body []byte) *Request {
 	r.body = body
 	return r
@@ -188,7 +193,8 @@ func (r *Request) prepareResponse(resp *http.Response, req *http.Request) Result
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode > http.StatusNoContent {
-		err := fmt.Errorf("the server responded with the status code %d. Request method %s. Raw response: %v", resp.StatusCode, req.Method, string(body))
+		err := fmt.Errorf("the server responded with the status code %d. Request method %s. Raw response: %v",
+			resp.StatusCode, req.Method, string(body))
 		return Result{
 			Body:       body,
 			StatusCode: resp.StatusCode,

@@ -18,6 +18,8 @@ package tarter
 
 import (
 	"fmt"
+	"time"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
@@ -33,7 +35,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/runner"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
-	"time"
 )
 
 const (
@@ -179,6 +180,10 @@ func (t *Tarter) addProber(runner *tt.Runner) {
 		LivenessProbe: runner.Config.LivenessProbe,
 	}
 	t.proberManager.AddProber(probeTarget)
+}
+
+func (t *Tarter) GetWorkersCount() int {
+	return t.runnerManager.WorkerCount()
 }
 
 func (t *Tarter) ListRunnerWorkers() []string {

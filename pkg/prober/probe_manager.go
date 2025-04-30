@@ -18,13 +18,14 @@
 package prober
 
 import (
+	"sync"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/results"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"sync"
 )
 
 type ProberManager struct {
@@ -88,13 +89,6 @@ func (m *ProberManager) AddProber(target *pt.ProbeTarget) {
 		m.workers[targetKey] = w
 		go w.run()
 	}
-}
-
-func (m *ProberManager) getWorker(targetID utils.UID, targetName string, probeType pt.ProbeType) (*worker, bool) {
-	m.workerLock.RLock()
-	defer m.workerLock.RUnlock()
-	worker, ok := m.workers[probeTargetKey{targetID, targetName, probeType}]
-	return worker, ok
 }
 
 // Called by the worker after exiting.

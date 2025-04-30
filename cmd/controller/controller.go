@@ -17,8 +17,9 @@
 package main
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/cmd/controller/app"
 	"os"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/cmd/controller/app"
 )
 
 func main() {

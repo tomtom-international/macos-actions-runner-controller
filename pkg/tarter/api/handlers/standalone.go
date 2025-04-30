@@ -19,9 +19,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter"
-	"net/http"
 )
 
 func GetStandaloneConfigHandler(t *tarter.Tarter) http.HandlerFunc {

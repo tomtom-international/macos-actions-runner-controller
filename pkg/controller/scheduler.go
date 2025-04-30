@@ -18,12 +18,13 @@ package controller
 
 import (
 	"context"
+	"sort"
+	"time"
+
 	np "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/nodepool"
 	r "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/runners"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"sort"
-	"time"
 )
 
 const schedulerPeriod = 15 * time.Second

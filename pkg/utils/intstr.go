@@ -20,8 +20,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"strconv"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Type represents the stored type of Int32String.

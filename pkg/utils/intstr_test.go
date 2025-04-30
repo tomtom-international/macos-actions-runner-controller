@@ -19,8 +19,9 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFromInt32(t *testing.T) {
