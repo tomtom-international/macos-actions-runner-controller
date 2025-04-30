@@ -20,8 +20,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"strconv"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Type represents the stored type of Int32String.
@@ -33,9 +34,9 @@ const (
 )
 
 type Int32String struct {
+	StrVal string
 	Type   Type
 	IntVal int32
-	StrVal string
 }
 
 // FromInt32 creates an Int32String object with an int32 value.

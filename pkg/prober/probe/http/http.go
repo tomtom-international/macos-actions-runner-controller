@@ -18,8 +18,9 @@
 package http
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	"time"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 )
 
 func New() Prober {

@@ -19,13 +19,14 @@ package runner
 import (
 	"bytes"
 	"fmt"
-	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	t "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"os"
 	"os/exec"
 	"sync"
 	"syscall"
+
+	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
+	t "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 )
 
 type workerAction string
@@ -42,13 +43,12 @@ type worker struct {
 	sigChan       chan os.Signal
 	runnerManager *RunnerManager
 	runner        *t.Runner
+	cmd           *exec.Cmd
 	tartVMName    string
+	stdout        bytes.Buffer
+	stderr        bytes.Buffer
 	stopOnce      sync.Once
-
-	cmd     *exec.Cmd
-	cmdLock sync.Mutex
-	stdout  bytes.Buffer
-	stderr  bytes.Buffer
+	cmdLock       sync.Mutex
 }
 
 func newWorker(runnerManager *RunnerManager, runner *t.Runner) *worker {
@@ -72,18 +72,19 @@ runnerLoop:
 	for {
 		select {
 		case action := <-w.startStopChan:
-			if action == Start {
+			switch action {
+			case Start:
 				err := w.startRunner()
 				if err != nil {
 					break runnerLoop
 				}
-			} else if action == Stop {
+			case Stop:
 				w.stopRunner()
-			} else if action == Terminate {
+			case Terminate:
 				w.terminateRunner()
-			} else if action == Exit {
+			case Exit:
 				break runnerLoop
-			} else {
+			default:
 				logger.Errorf("Unknown action: %v", action)
 				break runnerLoop
 			}

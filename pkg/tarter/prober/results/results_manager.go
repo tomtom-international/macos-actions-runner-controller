@@ -17,21 +17,21 @@
 package results
 
 import (
+	"sync"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/results"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/events"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"sync"
 )
 
 // Prober results manager implementation.
 type runnerProbeResultManager struct {
-	mu        sync.RWMutex
+	eventBus  *events.EventBus
 	probeType pt.ProbeType
-	// Event Bus to send health_check events
-	eventBus *events.EventBus
+	mu        sync.RWMutex
 }
 
 var _ results.Manager = &runnerProbeResultManager{}
@@ -57,5 +57,4 @@ func (m *runnerProbeResultManager) SetResult(runnerID utils.UID, result probe.Re
 	case pt.Startup:
 		m.eventBus.Publish(events.Event{Type: tt.EventRunnerStartupHealthCheck, Payload: payload})
 	}
-
 }

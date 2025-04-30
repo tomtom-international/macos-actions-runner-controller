@@ -22,8 +22,8 @@ import (
 
 // Event represents an event in the system.
 type Event struct {
-	Type    string
 	Payload interface{}
+	Type    string
 }
 
 // EventBus handles event publishing and subscription.

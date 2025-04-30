@@ -19,16 +19,17 @@ package server
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net"
-	"net/http"
-	"os"
-	"time"
 )
 
 // ControllerInterface contains all the controller methods required for the server.
@@ -72,6 +73,7 @@ func ListenAndServeControllerServer(controller ControllerInterface, address net.
 		// To avoid Slowloris attacks and control websocket connections.
 		ReadTimeout:    2 * 60 * time.Minute,
 		WriteTimeout:   1 * 60 * time.Minute,
+		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 

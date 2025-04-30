@@ -31,19 +31,19 @@ const (
 type TarterMode string
 
 type TarterConfig struct {
-	LogDebug            bool   `env:"LOG_DEBUG" envDefault:"false"`
-	LogCaller           bool   `env:"LOG_CALLER" envDefault:"false"`
-	LogStacktrace       bool   `env:"LOG_STACKTRACE" envDefault:"false"`
-	LogJSON             bool   `env:"LOG_JSON" envDefault:"false"`
+	TartPath            string `env:"TART_PATH" envDefault:"/opt/homebrew/bin/tart"`
+	GhAppOrg            string `env:"GH_APP_ORG"`
+	GhAppPrivateKeyFile string `env:"GH_APP_PRIVATE_KEY_FILE" envDefault:"/opt/tarter/config/.gh_app_private_key.pem"`
+	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
 	Port                string `env:"PORT" envDefault:"8041"`
 	Mode                string `env:"TARTER_MODE"`
 	ConfigFolder        string `env:"TARTER_CONFIG_PATH" envDefault:"/opt/tarter/config"`
-	TartPath            string `env:"TART_PATH" envDefault:"/opt/homebrew/bin/tart"`
-	GhAppId             int    `env:"GH_APP_ID"`
 	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
-	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
-	GhAppPrivateKeyFile string `env:"GH_APP_PRIVATE_KEY_FILE" envDefault:"/opt/tarter/config/.gh_app_private_key.pem"`
-	GhAppOrg            string `env:"GH_APP_ORG"`
+	GhAppID             int    `env:"GH_APP_ID"`
+	LogDebug            bool   `env:"LOG_DEBUG" envDefault:"false"`
+	LogJSON             bool   `env:"LOG_JSON" envDefault:"false"`
+	LogStacktrace       bool   `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogCaller           bool   `env:"LOG_CALLER" envDefault:"false"`
 }
 
 type Config interface {
@@ -55,14 +55,14 @@ type Config interface {
 
 type ControllerConfig struct {
 	Server         string `json:"server" yaml:"server"`
-	ApiVersionPath string `json:"apiVersionPath" yaml:"apiVersionPath"`
+	APIVersionPath string `json:"apiVersionPath" yaml:"apiVersionPath"`
 }
 
 type NodeCapacity struct {
-	Cpu    u.Int32String `json:"cpu"  yaml:"cpu"`
+	CPU    u.Int32String `json:"cpu" yaml:"cpu"`
 	Memory u.Int32String `json:"memory" yaml:"memory"`
 	// Maximum number of runners that can be created and stored in State
-	// at the same time. This limitation based on Apple Visualisation limitations.
+	// at the same time. This limitation based on Apple Visualization limitations.
 	MaxActiveRunners u.Int32String `json:"maxActiveRunners" yaml:"maxActiveRunners"`
 }
 
@@ -75,7 +75,7 @@ func LoadTarterConfiguration(c *TarterConfig) error {
 
 func GetGithubClientConfig(c *TarterConfig) (ghConfig ghclient.ClientConfig) {
 	return ghclient.ClientConfig{
-		AppID:          int64(c.GhAppId),
+		AppID:          int64(c.GhAppID),
 		InstallationID: int64(c.GhAppInstallationID),
 		PrivateKey:     []byte(c.GhAppPrivateKey),
 		PrivateKeyFile: c.GhAppPrivateKeyFile,

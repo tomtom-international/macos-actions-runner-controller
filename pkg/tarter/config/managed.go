@@ -17,15 +17,16 @@
 package config
 
 import (
+	"os"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"gopkg.in/yaml.v3"
-	"os"
 )
 
 type ManagedConfig struct {
-	Runners      []types.RunnerConfig `yaml:"runners"`
 	Controller   ControllerConfig     `yaml:"controller"`
+	Runners      []types.RunnerConfig `yaml:"runners"`
 	NodeCapacity NodeCapacity         `yaml:"nodeCapacity"`
 }
 

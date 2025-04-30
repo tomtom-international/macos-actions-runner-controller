@@ -20,13 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"path"
-	"time"
 )
 
 const (
@@ -34,12 +35,12 @@ const (
 )
 
 type heartbeatWatcher struct {
-	nodeID      utils.UID
-	watchKey    string
-	etcdClient  *etcd.EtcdClient
 	ctx         context.Context
+	etcdClient  *etcd.EtcdClient
 	ctxCancel   context.CancelFunc
 	nodeManager *Manager
+	nodeID      utils.UID
+	watchKey    string
 	pause       bool
 }
 
@@ -48,6 +49,7 @@ func newHeartbeatWatcher(
 	etcdClient *etcd.EtcdClient,
 	nodeManager *Manager,
 ) *heartbeatWatcher {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	key := path.Join("/", nodeManager.etcdKeyPrefix, string(nodeID))
 
@@ -62,6 +64,8 @@ func newHeartbeatWatcher(
 }
 
 // TODO: consider to rely on heartbeat request instead of etcd watcher because it triggers on every node change
+//
+//gocyclo:ignore
 func (w *heartbeatWatcher) run() {
 	defer func() {
 		logger.Debugf("Stopping heartbeat watcher for node %s", w.nodeID)
@@ -98,7 +102,6 @@ func (w *heartbeatWatcher) run() {
 							continue
 						}
 						if node.Status.Condition.LastHeartbeatTime.Add(3 * time.Second).After(time.Now()) {
-							//logger.Debugf("Received heartbeat for node %s.", w.nodeID)
 							w.pause = false
 						} else {
 							continue
@@ -115,7 +118,7 @@ func (w *heartbeatWatcher) run() {
 				}
 				// TODO: fix concurrent watchers on every replicas
 				logger.Debugf("Heartbeat watcher for node %s timed out.", w.nodeID)
-				node, err := w.nodeManager.GetNodeById(w.nodeID)
+				node, err := w.nodeManager.GetNodeByID(w.nodeID)
 				if err == nil && time.Since(node.Status.Condition.LastHeartbeatTime) > watchTimeoutSeconds*time.Second {
 					if node.Status.Condition.Status == types.Unknown || node.Status.Condition.Status == types.Deregistered {
 						continue

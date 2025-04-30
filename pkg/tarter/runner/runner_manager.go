@@ -17,30 +17,25 @@
 package runner
 
 import (
+	"sync"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"sync"
 )
 
 type RunnerManager struct {
-	tartClient *tart.Client
-
+	tartClient   *tart.Client
 	githubClient *ghclient.Client
-
-	//Worker is the worker
-	workers map[runnerKey]*worker
+	workers      map[runnerKey]*worker
+	stateManager *state.StateManager
+	nodeName     string
+	maxWorkers   int
 	// Lock for accessing & mutating workers
 	workerLock sync.RWMutex
-
-	stateManager *state.StateManager
-
-	maxWorkers int
-
-	nodeName string
 }
 
 type runnerKey struct {
@@ -53,6 +48,7 @@ func NewRunnerManager(
 	stateManager *state.StateManager,
 	maxWorkers int,
 	nodeName string) *RunnerManager {
+
 	return &RunnerManager{
 		workers:      make(map[runnerKey]*worker),
 		tartClient:   tartClient,
@@ -112,13 +108,6 @@ func (m *RunnerManager) TerminateRunnerWorker(runnerID utils.UID) {
 	}
 }
 
-func (m *RunnerManager) getWorker(runnerID utils.UID) (*worker, bool) {
-	m.workerLock.RLock()
-	defer m.workerLock.RUnlock()
-	worker, ok := m.workers[runnerKey{runnerID}]
-	return worker, ok
-}
-
 // Called by the worker after exiting.
 func (m *RunnerManager) removeWorker(runnerID utils.UID) {
 	m.workerLock.Lock()
@@ -126,8 +115,8 @@ func (m *RunnerManager) removeWorker(runnerID utils.UID) {
 	delete(m.workers, runnerKey{runnerID})
 }
 
-// workerCount returns the total number of probe workers. For testing.
-func (m *RunnerManager) workerCount() int {
+// WorkerCount returns the total number of probe workers. For testing.
+func (m *RunnerManager) WorkerCount() int {
 	m.workerLock.RLock()
 	defer m.workerLock.RUnlock()
 	return len(m.workers)

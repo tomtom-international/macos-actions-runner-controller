@@ -30,26 +30,21 @@ import (
 )
 
 type Request struct {
-	c *RESTClient
-
+	err        error
+	c          *RESTClient
+	params     url.Values
+	headers    http.Header
+	method     string
+	subPath    string
+	body       []byte
 	timeout    time.Duration
 	maxRetries int
-
-	// generic components accessible via method setters
-	method  string
-	subPath string
-	params  url.Values
-	headers http.Header
-	body    []byte
-
-	// output
-	err error
 }
 
 // Result contains the result of calling Request.Do().
 type Result struct {
-	Body       []byte
 	Err        error
+	Body       []byte
 	StatusCode int
 }
 
@@ -87,6 +82,11 @@ func (r *Request) SetHeader(key string, values ...string) *Request {
 
 func (r *Request) SubPath(subPath string) *Request {
 	r.subPath = subPath
+	return r
+}
+
+func (r *Request) Error(err error) *Request {
+	r.err = err
 	return r
 }
 
@@ -144,8 +144,8 @@ func (r *Request) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 		body = bytes.NewReader(r.body)
 	}
 
-	reqUrl := r.URL().String()
-	req, err := http.NewRequestWithContext(ctx, r.method, reqUrl, body)
+	reqURL := r.URL().String()
+	req, err := http.NewRequestWithContext(ctx, r.method, reqURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,8 @@ func (r *Request) prepareResponse(resp *http.Response, req *http.Request) Result
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode > http.StatusNoContent {
-		err := fmt.Errorf("the server responded with the status code %d. Request method %s. Raw response: %v", resp.StatusCode, req.Method, string(body))
+		err := fmt.Errorf("the server responded with the status code %d. Request method %s. Raw response: %v",
+			resp.StatusCode, req.Method, string(body))
 		return Result{
 			Body:       body,
 			StatusCode: resp.StatusCode,

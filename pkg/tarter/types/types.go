@@ -17,10 +17,11 @@
 package types
 
 import (
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"time"
 )
 
 // TODO: Document event types

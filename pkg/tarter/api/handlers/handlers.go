@@ -19,11 +19,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net/http"
 )
 
 func ListRunnersHandler(sm *state.StateManager) http.HandlerFunc {
@@ -46,7 +47,7 @@ func ListRunnersHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runners from state: %v", err),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -96,7 +97,7 @@ func GetRunnerHandler(sm *state.StateManager) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to marshal runner from state: %v", err),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

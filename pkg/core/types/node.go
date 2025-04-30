@@ -17,8 +17,9 @@
 package types
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 	"time"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 
 type NodeStatus string
@@ -51,39 +52,38 @@ const (
 )
 
 type Node struct {
-	Name string    `json:"name"`
-	ID   utils.UID `json:"id"`
-
-	Status                Status    `json:"status"`
 	RegistrationTimestamp time.Time `json:"registrationTimestamp"`
 	NodeInfo              NodeInfo  `json:"nodeInfo,omitempty"`
+	Name                  string    `json:"name"`
+	ID                    utils.UID `json:"id"`
+	Status                Status    `json:"status"`
 }
 
 type Status struct {
+	Condition   Condition         `json:"condition"`
+	Binding     []ResourceBinding `json:"binding,omitempty"`
 	Capacity    Resources         `json:"capacity"`
 	Allocatable Resources         `json:"allocatable"`
-	Binding     []ResourceBinding `json:"binding,omitempty"`
-	Condition   Condition         `json:"condition"`
 }
 
 type Resources struct {
-	Cpu     utils.Int32String `json:"cpu"`
+	CPU     utils.Int32String `json:"cpu"`
 	Memory  utils.Int32String `json:"memory"`
 	Runners utils.Int32String `json:"runners"`
 }
 
 type ResourceBinding struct {
-	Cpu      utils.Int32String `json:"cpu"`
-	Memory   utils.Int32String `json:"memory"`
 	RunnerID utils.UID         `json:"runnerId"`
+	CPU      utils.Int32String `json:"cpu"`
+	Memory   utils.Int32String `json:"memory"`
 }
 
 type Condition struct {
-	Status             NodeStatus `json:"status"`
-	Healthy            bool       `json:"healthy"`
 	LastHeartbeatTime  time.Time  `json:"lastHeartbeatTime,omitempty"`
 	LastTransitionTime time.Time  `json:"lastTransitionTime,omitempty"`
+	Status             NodeStatus `json:"status"`
 	Message            string     `json:"message,omitempty"`
+	Healthy            bool       `json:"healthy"`
 }
 
 type NodeInfo struct {
@@ -107,15 +107,15 @@ type NodeRegistrationRequest struct {
 
 type NodeRegistrationResponse struct {
 	RegistrationStatus NodeRegistrationStatus `json:"registrationStatus"`
-	Node               Node                   `json:"node,omitempty"`
 	Message            string                 `json:"message"`
+	Node               Node                   `json:"node,omitempty"`
 }
 
 type NodeHeartbeatRequest struct {
 	NodeName    string     `json:"nodeName"`
-	Allocatable Resources  `json:"allocatable"`
 	Status      NodeStatus `json:"status"`
 	Message     string     `json:"message,omitempty"`
+	Allocatable Resources  `json:"allocatable"`
 }
 
 type WatcherNodesUpdate struct {

@@ -19,26 +19,27 @@ package node
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
-	"sync"
-	"time"
 )
 
 type Manager struct {
-	syncNodeStatusMux     sync.Mutex
+	// lastHeartbeatTime     time.Time
 	stateManager          *state.StateManager
-	registerNode          bool
-	registrationCompleted bool
-	lastHeartbeatTime     time.Time
 	node                  *types.Node
 	controllerClient      *controller.Client
 	nodeInfo              types.NodeInfo
 	nodeCapacity          types.Resources
 	nodeStatusUpdateRetry int
+	syncNodeStatusMux     sync.Mutex
+	registerNode          bool
+	registrationCompleted bool
 	stopSyncNodeStatus    bool
 }
 
@@ -50,6 +51,7 @@ func NewManager(
 	nodeCapacity types.Resources,
 	nodeStatusUpdateRetry int,
 ) *Manager {
+
 	return &Manager{
 		stateManager:          stateManager,
 		registerNode:          registerNode,
@@ -72,16 +74,12 @@ func (m *Manager) registerWithController() {
 
 	for {
 		time.Sleep(step)
-		step = step * 2
+		step *= 2
 		if step >= 7*time.Second {
 			step = 7 * time.Second
 		}
 
-		node, err := m.initialNode()
-		if err != nil {
-			logger.Errorf("Unable to construct Node object for Tarter. Error: %v", err)
-			continue
-		}
+		node := m.initialNode()
 
 		logger.Infof("Trying to register node %s", node.Name)
 		registered := m.tryRegisterWithController(node)
@@ -104,7 +102,7 @@ func (m *Manager) tryRegisterWithController(node *types.Node) bool {
 	}
 
 	if !controller.IsAlreadyExists(err) {
-		logger.Errorf("Unable to register node %s with Tarter Controller. Error: %v", node.Name, err)
+		logger.Errorf("Unable to register node %s with Tarter Controller. Error: %s", node.Name, err.Error())
 		return false
 	}
 
@@ -116,7 +114,8 @@ func (m *Manager) tryRegisterWithController(node *types.Node) bool {
 
 	logger.Infof("Node %s was previously registered", node.Name)
 
-	// TODO: Check if existingNode registered by Tarter of this node. Controller should have unique information about Tarter that registered the node.
+	// TODO: Check if existingNode registered by Tarter of this node.
+	// Controller should have unique information about Tarter that registered the node.
 
 	// TODO: Patch node if it differs from existingNode and send it to Controller.
 
@@ -145,7 +144,7 @@ func (m *Manager) SyncNodeStatus() {
 	}
 	// Send heartbeat with node status to Tarter Controller.
 	if err := m.updateNodeStatus(ctx); err != nil {
-		logger.Errorf("Unable to update node status, error: %v", err)
+		logger.Errorf("Unable to update node status, error: %s", err.Error())
 	}
 }
 
@@ -155,10 +154,11 @@ func (m *Manager) SyncNodeStatusOnce() {
 	defer m.syncNodeStatusMux.Unlock()
 
 	ctx := context.Background()
-	updatedNode, err := m.updateNode(*m.node)
-	_, err = m.controllerClient.SendHeartbeat(ctx, updatedNode)
+	updatedNode := m.updateNode(*m.node)
+
+	_, err := m.controllerClient.SendHeartbeat(ctx, updatedNode)
 	if err != nil {
-		logger.Errorf("Unable to update node status, error: %v", err)
+		logger.Errorf("Unable to send Heartbeat, error: %s", err.Error())
 	}
 	m.node = &updatedNode
 }
@@ -168,7 +168,7 @@ func (m *Manager) SyncNodeStatusOnce() {
 func (m *Manager) updateNodeStatus(ctx context.Context) error {
 	for i := 0; i < m.nodeStatusUpdateRetry; i++ {
 		if err := m.sendHeartbeat(ctx, m.node); err != nil {
-			logger.Errorf("Error updating node status, will retry. Error: %v", err.Error())
+			logger.Errorf("Error updating node status, will retry. Error: %s", err.Error())
 			time.Sleep(100 * time.Millisecond)
 		} else {
 			return nil
@@ -180,11 +180,10 @@ func (m *Manager) updateNodeStatus(ctx context.Context) error {
 // sendHeartbeat tries to update node status to Tarter Controller if there is any
 // change or enough time passed from the last sync.
 func (m *Manager) sendHeartbeat(ctx context.Context, node *types.Node) error {
-	var err error
-	updatedNode, err := m.updateNode(*node)
+	updatedNode := m.updateNode(*node)
 
 	// TODO: Add heartbeat interval check
-	//shouldPatchNodeStatus := time.Since(m.lastHeartbeatTime) >= heartbeatInterval
+	// shouldPatchNodeStatus := time.Since(m.lastHeartbeatTime) >= heartbeatInterval
 
 	responseNode, err := m.controllerClient.SendHeartbeat(ctx, updatedNode)
 
@@ -198,7 +197,7 @@ func (m *Manager) sendHeartbeat(ctx context.Context, node *types.Node) error {
 		return err
 	}
 	m.node = &updatedNode
-	//m.lastHeartbeatTime = time.Now()
+	// m.lastHeartbeatTime = time.Now()
 
 	if responseNode != nil {
 		if responseNode.Status.Binding != nil {
@@ -214,30 +213,30 @@ func (m *Manager) sendHeartbeat(ctx context.Context, node *types.Node) error {
 
 // initialNode creates a new Node object with the initial status.
 // Safe to call multiple times, as it is not modifying m.node
-func (m *Manager) initialNode() (*types.Node, error) {
+func (m *Manager) initialNode() *types.Node {
 	node := types.Node{}
 	node.Name = m.nodeInfo.Address.Hostname
 	node.NodeInfo = m.nodeInfo
 	node.Status.Capacity = m.nodeCapacity
 	node.Status.Condition.Status = types.NotReady
-	return &node, nil
+	return &node
 }
 
 // updateNode updates node allocatable resources and status.
 // Safe to call multiple times, as it is not modifying m.node
-func (m *Manager) updateNode(node types.Node) (types.Node, error) {
+func (m *Manager) updateNode(node types.Node) types.Node {
 	// TODO: implement node health check to sent proper status
 	allocatableResources := m.node.Status.Capacity
 	activeRunners := m.stateManager.GetActiveRunners()
 	for _, runner := range activeRunners {
-		allocatableResources.Cpu.IntVal -= runner.Config.Cpu.IntVal
+		allocatableResources.CPU.IntVal -= runner.Config.CPU.IntVal
 		allocatableResources.Memory.IntVal -= runner.Config.Memory.IntVal
 		allocatableResources.Runners.IntVal -= 1
 	}
 	node.Status.Allocatable = allocatableResources
 	node.Status.Condition.Status = types.Ready
 
-	return node, nil
+	return node
 }
 
 func (m *Manager) processBindingRunners(ctx context.Context, runners []types.ResourceBinding) error {
@@ -250,7 +249,7 @@ func (m *Manager) processBindingRunners(ctx context.Context, runners []types.Res
 		}
 
 		// checking if runner can fit into node
-		if runnerInfo.Config.Cpu.IntVal > m.node.Status.Allocatable.Cpu.IntVal ||
+		if runnerInfo.Config.CPU.IntVal > m.node.Status.Allocatable.CPU.IntVal ||
 			runnerInfo.Config.Memory.IntVal > m.node.Status.Allocatable.Memory.IntVal {
 			logger.Errorf("Binded runner %s cannot fit into node %s", runner.RunnerID, m.node.Name)
 			continue

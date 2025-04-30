@@ -19,11 +19,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"net/http"
 )
 
 func GetNodeListHandler(c ControllerInterface) http.HandlerFunc {
@@ -49,7 +50,7 @@ func GetNodeListHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to list nodes: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -74,7 +75,7 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 				RegistrationStatus: types.RegistrationError,
 				Message:            "Failed to read registration request",
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -86,9 +87,9 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				response := types.NodeRegistrationResponse{
 					RegistrationStatus: status,
-					Message:            fmt.Sprintf("Failed to register node %s", node.Name),
+					Message:            "Node is nil",
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -100,7 +101,7 @@ func RegisterNodeHandler(c ControllerInterface) http.HandlerFunc {
 					Node:               *node,
 					Message:            fmt.Sprintf("Node %s already registered or deregistered for scheduling", node.Name),
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -152,7 +153,7 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 					Status:  http.StatusNotFound,
 					Message: fmt.Sprintf("Node %s not found", nodeID),
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -167,7 +168,7 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to get node: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -207,7 +208,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusBadRequest,
 				Message: "Failed to read node heartbeat request",
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -221,7 +222,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 					Status:  http.StatusNotAcceptable,
 					Message: fmt.Sprintf("Node %s disabled for scheduling", nodeID),
 				}
-				err := json.NewEncoder(w).Encode(response)
+				err = json.NewEncoder(w).Encode(response)
 				if err != nil {
 					return
 				}
@@ -232,7 +233,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusInternalServerError,
 				Message: fmt.Sprintf("Failed to process node heartBeat: %v", err.Error()),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -244,7 +245,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Node %s not found", nodeID),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -295,7 +296,7 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 				Status:  http.StatusNotFound,
 				Message: fmt.Sprintf("Node %s not found", nodeID),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}
@@ -307,7 +308,7 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
 			}
-			err := json.NewEncoder(w).Encode(response)
+			err = json.NewEncoder(w).Encode(response)
 			if err != nil {
 				return
 			}

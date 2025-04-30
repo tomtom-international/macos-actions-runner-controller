@@ -66,10 +66,6 @@ type HTTPGetAction struct {
 	// Path to access on the HTTP server.
 	// +optional
 	Path string `json:"path,omitempty"`
-	// Name or number of the port to access on the container.
-	// Number must be in the range 1 to 65535.
-	// Name must be an IANA_SVC_NAME.
-	Port utils.Int32String `json:"port"`
 	// Host name to connect to, defaults to the pod IP. You probably want to set
 	// "Host" in httpHeaders instead.
 	// +optional
@@ -82,6 +78,10 @@ type HTTPGetAction struct {
 	// +optional
 	// +listType=atomic
 	HTTPHeaders []HTTPHeader `json:"httpHeaders,omitempty"`
+	// Name or number of the port to access on the container.
+	// Number must be in the range 1 to 65535.
+	// Name must be an IANA_SVC_NAME.
+	Port utils.Int32String `json:"port"`
 }
 
 type GitHubRunnerGetAction struct {
@@ -89,11 +89,11 @@ type GitHubRunnerGetAction struct {
 }
 
 type ProbeTarget struct {
+	StartupProbe  *Probe          `json:"startupProbe,omitempty"`
+	LivenessProbe *Probe          `json:"livenessProbe,omitempty"`
 	ID            utils.UID       `json:"id"`
 	Name          string          `json:"name"`
 	Type          ProbeTargetType `json:"type"`
-	StartupProbe  *Probe          `json:"startupProbe,omitempty"`
-	LivenessProbe *Probe          `json:"livenessProbe,omitempty"`
 }
 
 type ProbeTargetType string

@@ -17,10 +17,11 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"net/http"
 )
 
 // TODO: validate origin

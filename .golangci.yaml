@@ -1,0 +1,98 @@
+run:
+  tests: true
+  timeout: 15m
+output:
+  show-stats: true
+  formats: colored-line-number
+linters:
+  enable:
+    - asciicheck
+    - bidichk
+    - errorlint
+    - errcheck
+    - copyloopvar
+    - gosec
+    - revive
+    - stylecheck
+    - tparallel
+    - unconvert
+    - unparam
+    - gocyclo
+    - whitespace
+    - govet
+    - goimports
+    - goheader
+    - misspell
+    - nilerr
+    - bodyclose
+    - dupl
+    - gochecknoinits
+    - gocritic
+    - gosimple
+    - ineffassign
+    - nakedret
+    - staticcheck
+    - typecheck
+    - unused
+    - goconst
+    - lll
+  fast: false
+  disable:
+    - prealloc
+
+linters-settings:
+  dupl:
+    threshold: 100
+  gocyclo:
+    min-complexity: 12
+  govet:
+    enable-all: true
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+  misspell:
+    locale: US
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  lll:
+    line-length: 140
+  gocritic:
+    enabled-tags:
+      - performance
+    disabled-checks:
+      - rangeValCopy
+# TODO: remove these excludes and fix the code
+      - hugeParam
+  whitespace:
+    multi-func: true
+
+issues:
+  exclude-rules:
+    - path: pkg/clients/sqs/client.go
+      linters:
+        - gosec
+      text: "G404"
+    - path: pkg/utils/random_string.go
+      linters:
+        - gosec
+      text: "G404"
+    - path: pkg/clients/github/client_test.go
+      linters:
+        - gosec
+      text: "G101"
+    - linters:
+        - gosimple
+      text: "S1000"
+    - path: pkg/tarter/runner/worker.go
+      linters:
+        - gocritic
+      text: "ifElseChain"
+# TODO: remove these excludes and fix the code
+    - path: pkg/controller/server/nodepool_handler.go
+      linters:
+        - dupl
+    - path: pkg/controller/server/runners_handler.go
+      linters:
+        - dupl

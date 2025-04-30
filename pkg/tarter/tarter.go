@@ -18,6 +18,8 @@ package tarter
 
 import (
 	"fmt"
+	"time"
+
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
@@ -33,7 +35,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/runner"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/state"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"
-	"time"
 )
 
 const (
@@ -43,46 +44,33 @@ const (
 )
 
 type Tarter struct {
-	nodeName string
-
-	nodeIP string
-
-	tarterServerPort string
-
-	versionInfo coreVersion.VersionInfo
-
-	githubClient *ghclient.Client
-
-	// maintain all requests to Tart cli tool
-	tartClient *tart.Client
-
-	// maintain all probes
-	proberManager *prober.ProberManager
-
-	// maintain running processes
-	runnerManager *runner.RunnerManager
-
-	// TODO: Allow to communicate with StateManager only for Tarter
-	// Runners State Machine which store runners state
-	StateManager *state.StateManager
-
 	// TODO: Consider using link to Config instead of Config itself
 	// standalone mode configuration
 	config config.Config
-
-	configPath string
-
+	// maintain all probes
+	proberManager *prober.ProberManager
+	githubClient  *ghclient.Client
+	// maintain all requests to Tart cli tool
+	tartClient *tart.Client
+	// maintain running processes
+	runnerManager *runner.RunnerManager
+	// TODO: Allow to communicate with StateManager only for Tarter
+	// Runners State Machine which store runners state
+	StateManager *state.StateManager
 	// event bus
 	eventBus *events.EventBus
-
 	// controller client for managed mode
 	controllerClient *controller.Client
-
 	// manage node status updates
-	nodeManager *node.Manager
+	nodeManager      *node.Manager
+	versionInfo      coreVersion.VersionInfo
+	tarterServerPort string
+	nodeName         string
+	nodeIP           string
+	configPath       string
 }
 
-func NewTarter(tarterConfig config.TarterConfig,
+func NewTarter(tarterConfig *config.TarterConfig,
 	appConfig config.Config,
 	configPath string,
 	nodeName string,
@@ -90,7 +78,7 @@ func NewTarter(tarterConfig config.TarterConfig,
 	versionInfo coreVersion.VersionInfo,
 ) (*Tarter, error) {
 
-	ghConfig := config.GetGithubClientConfig(&tarterConfig)
+	ghConfig := config.GetGithubClientConfig(tarterConfig)
 	githubClient, err := ghclient.New(ghConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initiate GitHub client, %v", err.Error())
@@ -192,6 +180,10 @@ func (t *Tarter) addProber(runner *tt.Runner) {
 		LivenessProbe: runner.Config.LivenessProbe,
 	}
 	t.proberManager.AddProber(probeTarget)
+}
+
+func (t *Tarter) GetWorkersCount() int {
+	return t.runnerManager.WorkerCount()
 }
 
 func (t *Tarter) ListRunnerWorkers() []string {

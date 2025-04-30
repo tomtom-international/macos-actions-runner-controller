@@ -20,17 +20,18 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/caarlos0/env"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"gopkg.in/yaml.v3"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 const (
@@ -52,10 +53,10 @@ type hookConfig struct {
 	GhaJITConfig        string `env:"ACTIONS_RUNNER_INPUT_JITCONFIG"`
 	RunnerConfigFile    string `env:"RUNNER_CONFIG_FILE" envDefault:"/opt/tarter-hook/runner_config.yaml"`
 	GhaRunnerGroup      string `env:"GHA_RUNNER_GROUP"`
-	GhAppId             int    `env:"GH_APP_ID"`
-	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
 	GhAppPrivateKey     string `env:"GH_APP_PRIVATE_KEY"`
 	GhAppOrg            string `env:"GH_APP_ORG"`
+	GhAppID             int    `env:"GH_APP_ID"`
+	GhAppInstallationID int    `env:"GH_APP_INSTALLATION_ID"`
 }
 
 func loadHookConfiguration() {
@@ -77,7 +78,7 @@ func readRunnerConfig() {
 
 func initGithubClient() {
 	ghConfig := ghclient.ClientConfig{
-		AppID:          int64(cfg.GhAppId),
+		AppID:          int64(cfg.GhAppID),
 		InstallationID: int64(cfg.GhAppInstallationID),
 		PrivateKey:     []byte(cfg.GhAppPrivateKey),
 		Organization:   cfg.GhAppOrg,
@@ -91,7 +92,8 @@ func initGithubClient() {
 
 func main() {
 	info := coreVersion.GetVersionInfo()
-	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n", info.Version, info.BuildDate, info.GitCommit, info.Platform)
+	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n",
+		info.Version, info.BuildDate, info.GitCommit, info.Platform)
 	log.Println("Reading configuration")
 	loadHookConfiguration()
 	readRunnerConfig()
@@ -140,7 +142,6 @@ runnerStatusCheckLoop:
 	}
 
 	log.Println("Hook finished")
-	os.Exit(0)
 }
 
 func checkStatus(ghaRunnerName string) bool {

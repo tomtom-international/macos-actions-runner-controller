@@ -19,22 +19,23 @@ package nodepool
 import (
 	"context"
 	"encoding/json"
+	"path"
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-	"path"
-	"sync"
 )
 
 type Manager struct {
 	etcdClient              *etcd.EtcdClient
+	heartbeatWatchers       map[utils.UID]*heartbeatWatcher
+	nodesWatcher            *nodesWatcher
 	etcdKeyPrefix           string
 	etcdNodeDeregisterLease int
-	heartbeatWatchers       map[utils.UID]*heartbeatWatcher
 	heartbeatWatcherLock    sync.RWMutex
-	nodesWatcher            *nodesWatcher
 	nodesWatcherLock        sync.RWMutex
 }
 
@@ -114,11 +115,11 @@ func (m *Manager) removeNodeHeartbeatWatcher(nodeID utils.UID) {
 	delete(m.heartbeatWatchers, nodeID)
 }
 
-func (m *Manager) GetNodeById(nodeID utils.UID) (*types.Node, error) {
+func (m *Manager) GetNodeByID(nodeID utils.UID) (*types.Node, error) {
 	key := path.Join("/", m.etcdKeyPrefix, string(nodeID))
 	rawNode, err := m.etcdClient.Get(key)
 	if err != nil {
-		logger.Errorf("GetNodeById failed to get Node %s from etcd, error: %s", nodeID, err)
+		logger.Errorf("GetNodeByID failed to get Node %s from etcd, error: %s", nodeID, err)
 		return nil, err
 	}
 	if rawNode == "" {
@@ -127,7 +128,7 @@ func (m *Manager) GetNodeById(nodeID utils.UID) (*types.Node, error) {
 	var node types.Node
 	err = json.Unmarshal([]byte(rawNode), &node)
 	if err != nil {
-		logger.Errorf("GetNodeById failed to unmarshal Node %s, error: %s", nodeID, err)
+		logger.Errorf("GetNodeByID failed to unmarshal Node %s, error: %s", nodeID, err)
 		return nil, err
 	}
 
