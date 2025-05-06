@@ -7,6 +7,7 @@ ENV CGO_ENABLED=0
 # TARGET_OS can be "linux", "darwin",
 # TARGET_ARCH can be "amd64", "arm64", and "arm"
 ARG TARGETOS TARGETARCH TARGETVARIANT VERSION=0.0.0 COMMIT_SHA=dev BUILD_DATE=dev
+ARG TARGET_APP
 
 COPY go.mod go.sum ./
 RUN go mod download

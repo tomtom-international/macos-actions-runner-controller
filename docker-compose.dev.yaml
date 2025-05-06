@@ -1,0 +1,47 @@
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - localstack:/var/lib/localstack
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  localstack-setup:
+    image: localstack/localstack
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        sleep 5
+        awslocal sqs create-queue --queue-name runner-request
+        awslocal sqs create-queue --queue-name runner-request-dlq
+        export DLQ_ARN=arn:aws:sqs:$${AWS_DEFAULT_REGION}:000000000000:runner-request-dlq
+        export REDRIVE_POLICY="{\"RedrivePolicy\": \"{\\\"maxReceiveCount\\\":\\\"2\\\",\\\"deadLetterTargetArn\\\":\\\"$$DLQ_ARN\\\"}\"}"
+        awslocal sqs set-queue-attributes \
+          --queue-url http://sqs.$${AWS_DEFAULT_REGION}.localhost.localstack.cloud:4566/000000000000/runner-request \
+          --attributes "$$REDRIVE_POLICY"
+    depends_on:
+      - localstack
+    environment:
+      - DEBUG=${DEBUG:-0}
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_DEFAULT_REGION=eu-west-1
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.16
+    ports:
+      - "2379:2379"
+    entrypoint: /usr/local/bin/etcd
+    command:
+      - '--advertise-client-urls=http://0.0.0.0:2379'
+      - '--listen-client-urls=http://0.0.0.0:2379'
+    volumes:
+      - etcd:/etcd_data
+
+volumes:
+  localstack:
+  etcd:
