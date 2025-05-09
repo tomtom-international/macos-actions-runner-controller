@@ -71,8 +71,8 @@ func ListenAndServeControllerServer(controller ControllerInterface, address net.
 		Addr:    fmt.Sprintf("%s:%s", address, port),
 		Handler: handler,
 		// To avoid Slowloris attacks and control websocket connections.
-		ReadTimeout:    2 * 60 * time.Minute,
-		WriteTimeout:   1 * 60 * time.Minute,
+		ReadTimeout:    2 * 60 * time.Second,
+		WriteTimeout:   1 * 60 * time.Second,
 		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}

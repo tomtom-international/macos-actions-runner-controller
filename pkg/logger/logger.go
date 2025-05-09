@@ -11,6 +11,10 @@ var (
 	log *zap.Logger
 )
 
+func init() {
+	log = zap.NewNop()
+}
+
 func InitLogger(debugLog, logCaller, logStacktrace, jsonLog bool) error {
 	var level zapcore.Level
 	var err error

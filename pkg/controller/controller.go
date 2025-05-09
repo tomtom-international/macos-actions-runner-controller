@@ -19,12 +19,12 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"sync"
 	"time"
 
+	sqsTypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
@@ -35,11 +35,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
-)
-
-const (
-	minBackoff = 4 * time.Second
-	maxBackoff = 60 * time.Second
 )
 
 type Controller struct {
@@ -58,7 +53,15 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	sqsClient, err := sqs.NewClient(configuration.AwsRegion, configuration.AwsRunnerRequestSQSUrl)
+	sqsClient, err := sqs.NewClient(
+		&sqs.SQSConfig{
+			QueueURL:  configuration.AwsRunnerRequestSQSUrl,
+			AWSRegion: configuration.AwsRegion,
+			ErrHandle: func(err error) {
+				logger.Errorf("Sqs error: %s", err.Error())
+			},
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +90,7 @@ func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		c.listenForNewRunners(ctx, c.createRunner)
+		c.listenForNewRunners(ctx, c.readSQSMessages)
 	}()
 	go func() {
 		defer wg.Done()
@@ -345,9 +348,9 @@ func (c *Controller) GetRunnerList() ([]types.Runner, error) {
 	return runners, nil
 }
 
-func (c *Controller) listenForNewRunners(ctx context.Context, handlerFunc func(runner *types.Runner) error) {
-	logger.Debugf("Listening for new messages from SQS queue: %s", c.sqsRunnerRequestClient.QueueURL)
-	pollForMessages(ctx, c.sqsRunnerRequestClient, handlerFunc)
+func (c *Controller) listenForNewRunners(ctx context.Context, handlerFunc func(message *sqsTypes.Message) error) {
+	logger.Debugf("Listening for new messages from SQS queue")
+	c.sqsRunnerRequestClient.PollForMessages(ctx, handlerFunc)
 }
 
 func (c *Controller) checkRegisteredNodes() {
@@ -373,65 +376,21 @@ func (c *Controller) checkRegisteredNodes() {
 	}
 }
 
-func pollForMessages(ctx context.Context, sqsClient *sqs.SQSClient, handler func(runner *types.Runner) error) {
-	currentBackoff := minBackoff
-
-	for {
-		select {
-		case <-ctx.Done():
-			// Context was canceled - exit gracefully without error
-			logger.Debugf("Context canceled, stopping message polling from %s", sqsClient.QueueURL)
-			return
-		default:
-			messages, err := sqsClient.ReceiveMessages(ctx, 10, 20)
-			if err != nil {
-				// Check if the error is due to context cancellation
-				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-					logger.Debugf("Context canceled while receiving messages, stopping polling")
-					return
-				}
-
-				logger.Errorf("Failed to receive messages: %s", err.Error())
-
-				// Increase backoff on errors
-				currentBackoff = sqsClient.CalculateNextBackoff(currentBackoff, maxBackoff)
-				time.Sleep(currentBackoff)
-				continue
-			}
-
-			if len(messages) == 0 {
-				// No messages found, increase the backoff
-				currentBackoff = sqsClient.CalculateNextBackoff(currentBackoff, maxBackoff)
-				time.Sleep(currentBackoff)
-			} else {
-				// Messages found, reset backoff
-				currentBackoff = minBackoff
-
-				for _, msg := range messages {
-					runner := types.Runner{}
-					logger.Debugf("Received message with id: %s from queue %s", *msg.MessageId, sqsClient.QueueURL)
-					err := json.Unmarshal([]byte(*msg.Body), &runner)
-					if err != nil {
-						// message will be sent to DLQ after maximum receives
-						logger.Errorf("Failed to unmarshal message %s from queue %s: %s", *msg.MessageId, sqsClient.QueueURL, err.Error())
-						continue
-					}
-					runner.Condition.CreateRequestID = *msg.MessageId
-
-					err = handler(&runner)
-					if err != nil {
-						continue
-					}
-
-					_, err = sqsClient.DeleteMessage(ctx, *msg.ReceiptHandle)
-					if err != nil {
-						logger.Errorf("Failed to delete message %s from queue %s: %s", *msg.MessageId, sqsClient.QueueURL, err.Error())
-						continue
-					}
-				}
-			}
-		}
+func (c *Controller) readSQSMessages(msg *sqsTypes.Message) error {
+	runner := types.Runner{}
+	logger.Debugf("Received message with id: %s from queue", *msg.MessageId)
+	err := json.Unmarshal([]byte(*msg.Body), &runner)
+	if err != nil {
+		logger.Errorf("Failed to unmarshal message %s from queue: %s", *msg.MessageId, err.Error())
+		return err
 	}
+	runner.Condition.CreateRequestID = *msg.MessageId
+
+	err = c.createRunner(&runner)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Controller) AddRunnersWatcher(conn *websocket.Conn, notificationChan chan types.WatcherRunnersUpdate) {
