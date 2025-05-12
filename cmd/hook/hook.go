@@ -166,7 +166,12 @@ func checkStatus(ghaRunnerName string) bool {
 }
 
 func sendMessageToSqs(message string) {
-	client, err := sqs.NewClient(cfg.AwsRegion, cfg.AwsRunnerSQSUrl)
+	client, err := sqs.NewClient(
+		&sqs.SQSConfig{
+			QueueURL:  cfg.AwsRunnerSQSUrl,
+			AWSRegion: cfg.AwsRegion,
+		},
+	)
 	if err != nil {
 		log.Fatalf("Failed to create sqs client: %v", err)
 	}

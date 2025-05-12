@@ -17,7 +17,6 @@
 package config
 
 import (
-	"github.com/caarlos0/env"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	u "github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -64,13 +63,6 @@ type NodeCapacity struct {
 	// Maximum number of runners that can be created and stored in State
 	// at the same time. This limitation based on Apple Visualization limitations.
 	MaxActiveRunners u.Int32String `json:"maxActiveRunners" yaml:"maxActiveRunners"`
-}
-
-func LoadTarterConfiguration(c *TarterConfig) error {
-	if err := env.Parse(c); err != nil {
-		return err
-	}
-	return nil
 }
 
 func GetGithubClientConfig(c *TarterConfig) (ghConfig ghclient.ClientConfig) {

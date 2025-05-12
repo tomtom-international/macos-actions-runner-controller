@@ -23,6 +23,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/caarlos0/env"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	coreApi "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
@@ -48,10 +49,12 @@ func NewTarterCommand() *cobra.Command {
 			if cmd.Name() == "version" {
 				return nil
 			}
-			err := config.LoadTarterConfiguration(&tarterConfig)
-			if err != nil {
-				return errors.New("error: failed to load Tarter configuration. " + err.Error())
+
+			// Load configuration from environment variables
+			if err := env.Parse(&tarterConfig); err != nil {
+				return errors.New("error: failed to load Tarter configuration from environment. " + err.Error())
 			}
+
 			if configFile == "" {
 				return errors.New("error: --config argument is required")
 			}
