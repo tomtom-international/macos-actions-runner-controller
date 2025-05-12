@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -73,6 +74,22 @@ func (c *Client) GetTartVersion() (string, error) {
 	}
 	version := strings.TrimRight(string(out), "\r\n")
 	return version, nil
+}
+
+func (c *Client) GetTartVMIP(tartVMName string) (string, error) {
+	if !isValidExecutablePath(c.tartPath) {
+		return "", fmt.Errorf("invalid tart path: %s", c.tartPath)
+	}
+	// #nosec G204 - tartPath is a trusted configuration value, not user input
+	out, err := exec.Command(c.tartPath, "ip", tartVMName).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	ip := net.ParseIP(strings.TrimRight(string(out), "\r\n"))
+	if ip == nil {
+		return "", fmt.Errorf("failed to get tart VM IP")
+	}
+	return ip.String(), nil
 }
 
 func (c *Client) BuildCMDArguments(tartVMName string, config types.RunnerConfig) []string {

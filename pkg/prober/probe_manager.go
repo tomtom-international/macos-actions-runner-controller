@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
+	tartclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/results"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
@@ -39,11 +40,12 @@ type ProberManager struct {
 
 func NewManager(
 	githubClient *ghclient.Client,
+	tartClient *tartclient.Client,
 	stateManager *state.StateManager,
 	livenessManager results.Manager,
 	startupManager results.Manager) *ProberManager {
 
-	prober := newProber(githubClient)
+	prober := newProber(githubClient, tartClient)
 	return &ProberManager{
 		stateManager:    stateManager,
 		prober:          prober,

@@ -39,6 +39,8 @@ type ProbeHandler struct {
 	HTTPGet *HTTPGetAction `json:"httpGet,omitempty" yaml:"httpGet,omitempty"`
 
 	GitHubRunnerGet *GitHubRunnerGetAction `json:"githubRunnerGet,omitempty" yaml:"githubRunnerGet,omitempty"`
+
+	TartVMStatusGet *TartVMStatusGetAction `json:"tartVMStatusGet,omitempty" yaml:"tartVMStatusGet,omitempty"`
 }
 
 // URIScheme identifies the scheme used for connection to a host for Get actions
@@ -88,10 +90,14 @@ type GitHubRunnerGetAction struct {
 	RunnerName string `json:"runnerName,omitempty" yaml:"runnerName,omitempty"`
 }
 
+type TartVMStatusGetAction struct {
+}
+
 type ProbeTarget struct {
 	StartupProbe  *Probe          `json:"startupProbe,omitempty"`
 	LivenessProbe *Probe          `json:"livenessProbe,omitempty"`
 	ID            utils.UID       `json:"id"`
+	TartVMName    string          `json:"tartVMName"`
 	Name          string          `json:"name"`
 	Type          ProbeTargetType `json:"type"`
 }
