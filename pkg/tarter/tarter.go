@@ -103,7 +103,7 @@ func NewTarter(tarterConfig *config.TarterConfig,
 		versionInfo:      versionInfo,
 		githubClient:     githubClient,
 		tartClient:       tartClient,
-		proberManager:    prober.NewManager(githubClient, stateMachine, livenessManager, startupManager),
+		proberManager:    prober.NewManager(githubClient, tartClient, stateMachine, livenessManager, startupManager),
 		StateManager:     stateMachine,
 		runnerManager:    runner.NewRunnerManager(tartClient, githubClient, stateMachine, maxActiveRunners, nodeName),
 		eventBus:         eventBus,
@@ -174,6 +174,7 @@ func (t *Tarter) addProber(runner *tt.Runner) {
 	logger.Infof("Adding probe for runner %v ...", runner.ID)
 	probeTarget := &pt.ProbeTarget{
 		ID:            runner.ID,
+		TartVMName:    fmt.Sprintf("%s-%s", runner.Config.Name, string(runner.ID)),
 		Name:          runner.GhaRunnerName, // GhaRunnerName used by GitHub prober
 		Type:          pt.ProbeTargetTypeTartRunner,
 		StartupProbe:  runner.Config.StartupProbe,

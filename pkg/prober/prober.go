@@ -1,6 +1,6 @@
 /*
  * Copyright 2025 TomTom N.V.
- * Copyright 2015 The Kubernetes Authors.
+ * Copyright 2014 The Kubernetes Authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@ import (
 	"time"
 
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
+	tartclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	githubprobe "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe/github"
 	httpprobe "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe/http"
+	tartprobe "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe/tart"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 )
 
@@ -34,12 +36,14 @@ const maxProbeRetries = 3
 type prober struct {
 	github githubprobe.Prober
 	http   httpprobe.Prober
+	tart   tartprobe.Prober
 }
 
-func newProber(githubClient *ghclient.Client) *prober {
+func newProber(githubClient *ghclient.Client, tartClient *tartclient.Client) *prober {
 	return &prober{
 		github: githubprobe.New(githubClient),
 		http:   httpprobe.New(),
+		tart:   tartprobe.New(tartClient),
 	}
 }
 
@@ -90,10 +94,12 @@ func (pb *prober) runProbeWithRetries(spec *pt.Probe, target *pt.ProbeTarget, re
 func (pb *prober) runProbe(spec *pt.Probe, target *pt.ProbeTarget) (probe.Result, string, error) {
 	timeout := time.Duration(spec.TimeoutSeconds) * time.Second
 	switch {
+	case spec.TartVMStatusGet != nil:
+		logger.Debugf("Run TartVMStatusGet probe for traget: %s with ID: %s", target.Name, target.ID)
+		return pb.tart.Probe(target.TartVMName)
 	case spec.HTTPGet != nil:
-		logger.Infof("HTTPGet probe for traget: %v with ID: %v", target.Name, target.ID)
+		logger.Debugf("Run HTTPGet probe for traget: %s with ID: %s", target.Name, target.ID)
 		return pb.http.Probe(timeout)
-
 	case spec.GitHubRunnerGet != nil:
 		return pb.github.Probe(target.Name)
 	default:
