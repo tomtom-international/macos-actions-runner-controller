@@ -174,7 +174,7 @@ func (t *Tarter) addProber(runner *tt.Runner) {
 	logger.Infof("Adding probe for runner %v ...", runner.ID)
 	probeTarget := &pt.ProbeTarget{
 		ID:            runner.ID,
-		TartVMName:    fmt.Sprintf("%s-%s", runner.Config.Name, string(runner.ID)),
+		TartVMName:    runner.TartVMName,
 		Name:          runner.GhaRunnerName, // GhaRunnerName used by GitHub prober
 		Type:          pt.ProbeTargetTypeTartRunner,
 		StartupProbe:  runner.Config.StartupProbe,

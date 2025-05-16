@@ -44,7 +44,6 @@ type worker struct {
 	runnerManager *RunnerManager
 	runner        *t.Runner
 	cmd           *exec.Cmd
-	tartVMName    string
 	stdout        bytes.Buffer
 	stderr        bytes.Buffer
 	stopOnce      sync.Once
@@ -52,12 +51,14 @@ type worker struct {
 }
 
 func newWorker(runnerManager *RunnerManager, runner *t.Runner) *worker {
+	tartVMName := fmt.Sprintf("%s-%s", runner.Config.Name, string(runner.ID))
+	runner.TartVMName = tartVMName
+
 	return &worker{
 		startStopChan: make(chan workerAction, 1),
 		sigChan:       make(chan os.Signal, 1),
 		runnerManager: runnerManager,
 		runner:        runner,
-		tartVMName:    fmt.Sprintf("%s-%s", runner.Config.Name, string(runner.ID)),
 	}
 }
 
@@ -65,7 +66,7 @@ func (w *worker) run() {
 	defer func() {
 		logger.Debugf("Removing worker %s", w.runner.ID)
 		w.runnerManager.removeWorker(w.runner.ID)
-		w.runnerManager.tartClient.CleanupRunnerConfiguration(w.tartVMName)
+		w.runnerManager.tartClient.CleanupRunnerConfiguration(w.runner.TartVMName)
 	}()
 
 runnerLoop:
@@ -149,7 +150,7 @@ func (w *worker) startRunner() error {
 	ghaRunnerName, err := w.runnerManager.tartClient.SetupRunnerConfiguration(
 		w.runnerManager.nodeName,
 		string(w.runner.ID.Short()),
-		w.tartVMName,
+		w.runner.TartVMName,
 		w.runner.Config,
 		registrationToken.GetToken())
 	if err != nil {
@@ -163,7 +164,7 @@ func (w *worker) startRunner() error {
 	}
 
 	logger.Infof("Starting runner %s with name %s", w.runner.ID, w.runner.GhaRunnerName)
-	args := w.runnerManager.tartClient.BuildCMDArguments(w.tartVMName, w.runner.Config)
+	args := w.runnerManager.tartClient.BuildCMDArguments(w.runner.TartVMName, w.runner.Config)
 	w.cmd = w.runnerManager.tartClient.BuildCommand(&w.stdout, &w.stderr, args...)
 
 	logger.Debugf("Exec command: %v", w.cmd.String())
