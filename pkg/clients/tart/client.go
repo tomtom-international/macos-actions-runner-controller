@@ -63,6 +63,12 @@ func NewClient(tartPath string, configFolder string) *Client {
 	}
 }
 
+func NewDefaultClient(tartPath string) *Client {
+	return &Client{
+		tartPath: tartPath,
+	}
+}
+
 func (c *Client) GetTartVersion() (string, error) {
 	if !isValidExecutablePath(c.tartPath) {
 		return "", fmt.Errorf("invalid tart path: %s", c.tartPath)
@@ -85,9 +91,9 @@ func (c *Client) GetTartVMIP(tartVMName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ip := net.ParseIP(strings.TrimRight(string(out), "\r\n"))
+	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	if ip == nil {
-		return "", fmt.Errorf("failed to get tart VM IP")
+		return "", fmt.Errorf("failed to parse tart VM IP. Output: %s", string(out))
 	}
 	return ip.String(), nil
 }

@@ -61,6 +61,7 @@ type Runner struct {
 	// provided by the Controller when Tarter fetching runner info in Managed mode.
 	ID            utils.UID          `json:"id"`
 	GhaRunnerName string             `json:"ghaRunnerName,omitempty"`
+	TartVMName    string             `json:"tartVMName,omitempty"`
 	Config        types.RunnerConfig `json:"config,omitempty"`
 }
 
@@ -79,6 +80,7 @@ type RunnerStateList struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
 	GhaRunnerName string `json:"ghaRunnerName"`
+	TartVMName    string `json:"tartVMName"`
 	Status        string `json:"status"`
 	ErrorMessage  string `json:"errorMessage,omitempty"`
 }

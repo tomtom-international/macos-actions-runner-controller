@@ -51,7 +51,7 @@ type Runner struct {
 type RunnerCondition struct {
 	Status             RunnerStatus `json:"status"`
 	Message            string       `json:"message,omitempty"`
-	CreationTimestamp  time.Time    `json:"lastHeartbeatTime"`
+	CreationTimestamp  time.Time    `json:"creationTime,omitempty"`
 	LastTransitionTime time.Time    `json:"lastTransitionTime,omitempty"`
 	CreateRequestID    string       `json:"createRequestId,omitempty"`
 }

@@ -23,10 +23,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// TODO: response headers not working
 func MethodNotAllowedHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Header().Set("Content-Type", "application/json")
 
 		response := SimpleResponse{
@@ -34,6 +32,7 @@ func MethodNotAllowedHandler() http.HandlerFunc {
 			Message: "The method not allowed.",
 		}
 
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		err := json.NewEncoder(w).Encode(response)
 		if err != nil {
 			return
@@ -43,7 +42,6 @@ func MethodNotAllowedHandler() http.HandlerFunc {
 
 func NotFoundHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
 
 		response := SimpleResponse{
@@ -51,10 +49,26 @@ func NotFoundHandler() http.HandlerFunc {
 			Message: "Page not found.",
 		}
 
+		w.WriteHeader(http.StatusNotFound)
 		err := json.NewEncoder(w).Encode(response)
 		if err != nil {
 			return
 		}
+	}
+}
+
+func SimpleHealthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	response := SimpleResponse{
+		Status:  http.StatusOK,
+		Message: "Healthy",
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return
 	}
 }
 

@@ -143,6 +143,7 @@ func (sm *StateManager) createRunnerStateListResponse(runners map[utils.UID]*tt.
 			ID:            string(runner.Runner.ID),
 			Name:          runner.Runner.Config.Name,
 			GhaRunnerName: runner.Runner.GhaRunnerName,
+			TartVMName:    runner.Runner.TartVMName,
 			Status:        string(runner.Status),
 			ErrorMessage:  runner.ErrorMessage,
 		})
