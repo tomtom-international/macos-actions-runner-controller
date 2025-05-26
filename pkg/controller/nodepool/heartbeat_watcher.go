@@ -127,6 +127,7 @@ func (w *heartbeatWatcher) run() {
 					node.Status.Condition.Healthy = false
 					node.Status.Condition.Message = "Heartbeat timeout"
 					node.Status.Condition.LastTransitionTime = time.Now()
+					w.nodeManager.unhealthyNodesCh <- node
 
 					if node.Status.Condition.Status != types.Disabled {
 						node.Status.Condition.Status = types.Unknown

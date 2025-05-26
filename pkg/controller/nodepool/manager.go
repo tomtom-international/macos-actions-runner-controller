@@ -37,14 +37,16 @@ type Manager struct {
 	etcdNodeDeregisterLease int
 	heartbeatWatcherLock    sync.RWMutex
 	nodesWatcherLock        sync.RWMutex
+	unhealthyNodesCh        chan *types.Node
 }
 
-func NewManager(etcdClient *etcd.EtcdClient, etcdKeyPrefix string, etcdNodeDeregisterLease int) *Manager {
+func NewManager(etcdClient *etcd.EtcdClient, etcdKeyPrefix string, etcdNodeDeregisterLease int, unhealthyNodesCh chan *types.Node) *Manager {
 	return &Manager{
 		etcdClient:              etcdClient,
 		etcdKeyPrefix:           etcdKeyPrefix,
 		etcdNodeDeregisterLease: etcdNodeDeregisterLease,
 		heartbeatWatchers:       make(map[utils.UID]*heartbeatWatcher),
+		unhealthyNodesCh:        unhealthyNodesCh,
 	}
 }
 

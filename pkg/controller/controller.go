@@ -43,6 +43,7 @@ type Controller struct {
 	sqsRunnerRequestClient *sqs.SQSClient
 	runnerManager          *r.Manager
 	runnerUpdateCn         chan types.Runner
+	unhealthyNodesCh       chan *types.Node
 }
 
 func NewController(configuration config.ControllerConfig) (*Controller, error) {
@@ -65,12 +66,13 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	UnhealthyNodesCh := make(chan *types.Node, 100)
 	return &Controller{
 		EtcdClient:             etcdClient,
 		sqsRunnerRequestClient: sqsClient,
 		runnerUpdateCn:         make(chan types.Runner, 100),
-		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease),
+		unhealthyNodesCh:       UnhealthyNodesCh,
+		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease, UnhealthyNodesCh),
 		runnerManager:          r.NewManager(etcdClient, config.EtcdRunnersKey, configuration.EtcdRunnerFinishedLease),
 	}, nil
 }
@@ -87,7 +89,7 @@ func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	c.checkRegisteredNodes()
 
 	scheduler := newScheduler(c.nodePoolManager, c.runnerManager)
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		c.listenForNewRunners(ctx, c.readSQSMessages)
@@ -95,6 +97,10 @@ func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 		scheduler.startScheduler(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		c.checkUnhealthyNodes()
 	}()
 }
 
@@ -471,4 +477,40 @@ func (c *Controller) removeNodeBinding(nodeID, runnerID utils.UID) error {
 		return fmt.Errorf("failed to update node %s binding", node.ID)
 	}
 	return nil
+}
+
+func (c *Controller) checkUnhealthyNodes() {
+	for node := range c.unhealthyNodesCh {
+		runners, err := c.runnerManager.GetRunners()
+		if err != nil {
+			logger.Errorf("Failed to get runners while checking node %s: %v", node.ID, err)
+			continue
+		}
+
+		for _, runner := range runners {
+			if runner.NodeID != node.ID {
+				continue
+			}
+
+			if runner.Condition.Status == types.Finished {
+				continue
+			}
+
+			logger.Infof("Found unhealthy runner %s on node %s with status %s", runner.ID, node.ID, runner.Condition.Status)
+
+			if err := c.removeNodeBinding(runner.NodeID, runner.ID); err != nil {
+				logger.Errorf("Failed to remove node binding for runner %s on node %s: %v", runner.ID, runner.NodeID, err)
+				continue
+			}
+
+			runner.Condition.Status = types.Pending
+
+			if err := c.runnerManager.SaveRunner(&runner); err != nil {
+				logger.Errorf("Failed to update status to Pending for runner %s: %v", runner.ID, err)
+				continue
+			}
+
+			logger.Infof("Updated unhealthy runner %s on node %s to Pending", runner.ID, node.ID)
+		}
+	}
 }
