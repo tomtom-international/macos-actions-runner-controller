@@ -1,4 +1,4 @@
-name: Publish
+name: Publish Release Artifacts
 
 on:
   release:
@@ -6,13 +6,31 @@ on:
       - published
 
 permissions:
+  id-token: write
   contents: write
   packages: write
 
 jobs:
-  build-macos-actions-runner-tarter:
-    name: Build and Release Tarter
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.release_version.outputs.release_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set version from release
+        id: release_version
+        run: |
+          echo "release_version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+  publish-artifacts:
+    name: Build and Release Artifacts
+    runs-on: ubuntu-latest
+    needs:
+      - setup
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,16 +43,65 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      - name: Set version from release
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Build Release artifacts
+        run: make release VERSION=${{ needs.setup.outputs.release_version }}
 
-      - name: Build tarter release artifacts
-        run: make release-tarter VERSION=${{ env.VERSION }}
-
-      - name: Upload Tarter Binaries
+      - name: Upload Release artifacts
         uses: softprops/action-gh-release@v2
         with:
           files: release/*
           tag_name: ${{ github.event.release.tag_name }}
           append_body: true
+
+  publish-images:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: Build and Push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: make docker VERSION=${{ needs.setup.outputs.release_version }} IMAGE_REPO="${{ env.REGISTRY }}/${{ vars.AWS_ECR_REPO}}"
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+      - publish-artifacts
+      - publish-images
+    steps:
+      - name: Job summary
+        run: |
+          echo "The [publish.yaml](https://github.com/tomtom-international/macos-actions-runner-controller/blob/main/.github/workflows/publish.yaml) workflow has been triggered!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Parameters:**" >> $GITHUB_STEP_SUMMARY
+          echo "- version: ${{ needs.setup.outputs.release_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- sha: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
