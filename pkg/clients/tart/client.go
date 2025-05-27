@@ -114,8 +114,27 @@ func (c *Client) BuildCMDArguments(tartVMName string, config types.RunnerConfig)
 		args = append(args, fmt.Sprintf("--net-softnet-allow=%v", strings.Join(config.SoftnetNetwork.AllowedCIDRs, ",")))
 	}
 
-	if config.CacheVolumePath != "" {
-		args = append(args, fmt.Sprintf("--dir=%v:ro,tag=runnerCache", config.CacheVolumePath))
+	for _, volume := range config.Volumes {
+		volumeName := fmt.Sprintf("%s:", volume.Name)
+		volumePath := volume.HostPath
+		mode := "rw"
+		tag := ""
+		if volume.ReadOnly {
+			mode = "ro"
+		}
+		if volume.Tag != "" {
+			volumeName = ""
+			tag = fmt.Sprintf(",tag=%s", volume.Tag)
+		}
+		if !volume.Persistent {
+			volumePath = path.Join(volume.HostPath, tartVMName)
+			err := os.MkdirAll(volumePath, 0755)
+			if err != nil {
+				logger.Warnf("Failed to create volume directory %s: %v", volume.HostPath, err)
+				continue
+			}
+		}
+		args = append(args, fmt.Sprintf("--dir=%s%s:%s%s", volumeName, volumePath, mode, tag))
 	}
 
 	if !config.DisableRootDiskOptions {
@@ -141,7 +160,7 @@ func (c *Client) SetupRunnerConfiguration(
 	registrationToken string) (string, error) {
 
 	runnerConfigFolder := path.Join(c.configFolder, tartVMName)
-	err := os.MkdirAll(runnerConfigFolder, 0777)
+	err := os.MkdirAll(runnerConfigFolder, 0755)
 	if err != nil {
 		return "", fmt.Errorf("failed to create runner config folder: %s", err.Error())
 	}
@@ -191,12 +210,22 @@ func (c *Client) SetupRunnerConfiguration(
 	return ghaRunnerName, nil
 }
 
-func (c *Client) CleanupRunnerConfiguration(tartVMName string) {
+func (c *Client) CleanupRunnerConfiguration(tartVMName string, config types.RunnerConfig) {
 	err := os.RemoveAll(path.Join(c.configFolder, tartVMName))
 	if err != nil {
-		logger.Debugf("Unable to remove Tart config: %s", err.Error())
+		logger.Warnf("Unable to remove Tart config: %s", err.Error())
 		return
 	}
+
+	for _, volume := range config.Volumes {
+		if !volume.Persistent {
+			err := os.RemoveAll(path.Join(volume.HostPath, tartVMName))
+			if err != nil {
+				logger.Warnf("Unable to remove volume directory %s: %v", volume.HostPath, err)
+			}
+		}
+	}
+
 	c.removeRunnerImage(tartVMName)
 }
 

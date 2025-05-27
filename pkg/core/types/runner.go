@@ -66,8 +66,8 @@ type RunnerConfig struct {
 	// JitConfig is ACTIONS_RUNNER_INPUT_JITCONFIG environment variable passed by Actions Runner Controller.
 	// Temporary solution before Runners Listener is implemented.
 	JitConfig              string            `json:"jitConfig,omitempty" yaml:"jitConfig,omitempty"`
-	CacheVolumePath        string            `json:"cacheVolumePath" yaml:"cacheVolumePath"`
 	RunnerHostname         string            `json:"hostname" yaml:"hostname"`
+	Volumes                []RunnerVolume    `json:"volumes" yaml:"volumes"`
 	RunnerHosts            []RunnerHosts     `json:"hosts" yaml:"hosts"`
 	RunnerLabels           []string          `json:"labels" yaml:"labels"`
 	Memory                 utils.Int32String `json:"memory" yaml:"memory"`
@@ -79,13 +79,21 @@ type RunnerConfig struct {
 }
 
 type RunnerHosts struct {
-	IP        string   `yaml:"ip"`
-	Hostnames []string `yaml:"hostnames"`
+	IP        string   `json:"ip" yaml:"ip"`
+	Hostnames []string `json:"hostnames" yaml:"hostnames"`
+}
+
+type RunnerVolume struct {
+	Name       string `json:"name" yaml:"name"`
+	HostPath   string `json:"hostPath" yaml:"hostPath"`
+	Tag        string `json:"tag" yaml:"tag"`
+	ReadOnly   bool   `json:"readOnly" yaml:"readOnly"`
+	Persistent bool   `json:"persistent" yaml:"persistent"`
 }
 
 type SoftnetNetwork struct {
-	AllowedCIDRs []string `yaml:"allowCIDRs"`
-	Enable       bool     `yaml:"enable"`
+	AllowedCIDRs []string `json:"allowCIDRs" yaml:"allowCIDRs"`
+	Enable       bool     `json:"enable" yaml:"enable"`
 }
 
 type WatcherRunnersUpdate struct {
