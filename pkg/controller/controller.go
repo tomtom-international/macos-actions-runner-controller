@@ -100,7 +100,7 @@ func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 	go func() {
 		defer wg.Done()
-		c.checkUnhealthyNodes()
+		c.checkUnhealthyNodes(ctx)
 	}()
 }
 
@@ -479,38 +479,40 @@ func (c *Controller) removeNodeBinding(nodeID, runnerID utils.UID) error {
 	return nil
 }
 
-func (c *Controller) checkUnhealthyNodes() {
-	for node := range c.unhealthyNodesCh {
-		runners, err := c.runnerManager.GetRunners()
-		if err != nil {
-			logger.Errorf("Failed to get runners while checking node %s: %v", node.ID, err)
-			continue
-		}
+func (c *Controller) checkUnhealthyNodes(ctx context.Context) {
+	logger.Debugf("Starting orphan pod removal")
 
-		for _, runner := range runners {
-			if runner.NodeID != node.ID {
-				continue
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Warnf("Context cancelled, stopping orphan pod removal: %v", ctx.Err())
+			return
+		case node, ok := <-c.unhealthyNodesCh:
+			if !ok {
+				logger.Debugf("unhealthyNodesCh closed, exiting")
+				return
 			}
 
-			if runner.Condition.Status == types.Finished {
-				continue
+			for _, runner := range node.Status.Binding {
+				logger.Infof("Found unhealthy runner %s on node %s", runner.RunnerID, node.ID)
+
+				select {
+				case <-ctx.Done():
+					logger.Warnf("Context cancelled during runner processing: %v", ctx.Err())
+					return
+				default:
+					_, err := c.ProcessRunnersStatusUpdate(types.RunnerStatusUpdate{
+						ID:     runner.RunnerID,
+						Status: types.Pending,
+					})
+
+					if err != nil {
+						logger.Errorf("Failed to update status to Pending for runner %s: %v", runner.RunnerID, err)
+						continue
+					}
+					logger.Infof("Updated unhealthy runner %s on node %s to Pending", runner.RunnerID, node.ID)
+				}
 			}
-
-			logger.Infof("Found unhealthy runner %s on node %s with status %s", runner.ID, node.ID, runner.Condition.Status)
-
-			if err := c.removeNodeBinding(runner.NodeID, runner.ID); err != nil {
-				logger.Errorf("Failed to remove node binding for runner %s on node %s: %v", runner.ID, runner.NodeID, err)
-				continue
-			}
-
-			runner.Condition.Status = types.Pending
-
-			if err := c.runnerManager.SaveRunner(&runner); err != nil {
-				logger.Errorf("Failed to update status to Pending for runner %s: %v", runner.ID, err)
-				continue
-			}
-
-			logger.Infof("Updated unhealthy runner %s on node %s to Pending", runner.ID, node.ID)
 		}
 	}
 }
