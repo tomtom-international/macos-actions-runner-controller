@@ -66,7 +66,7 @@ func (w *worker) run() {
 	defer func() {
 		logger.Debugf("Removing worker %s", w.runner.ID)
 		w.runnerManager.removeWorker(w.runner.ID)
-		w.runnerManager.tartClient.CleanupRunnerConfiguration(w.runner.TartVMName)
+		w.runnerManager.tartClient.CleanupRunnerConfiguration(w.runner.TartVMName, w.runner.Config)
 	}()
 
 runnerLoop:
