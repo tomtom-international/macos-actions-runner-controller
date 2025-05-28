@@ -420,6 +420,15 @@ func (c *Controller) ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate)
 	}
 
 	switch update.Status {
+	case types.Pending:
+		logger.Debugf("Runner %s is pending", update.ID)
+		runner.Condition.Status = update.Status
+		// update node binding
+		err = c.removeNodeBinding(runner.NodeID, runner.ID)
+		if err != nil {
+			return nil, err
+		}
+		err = c.runnerManager.SaveRunner(runner)
 	case types.Running:
 		logger.Debugf("Runner %s is running", runner.ID)
 		runner.GhaRunnerName = update.GhaRunnerName
