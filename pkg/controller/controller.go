@@ -66,13 +66,13 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	UnhealthyNodesCh := make(chan *types.Node, 100)
+	unhealthyNodesCh := make(chan *types.Node, 100)
 	return &Controller{
 		EtcdClient:             etcdClient,
 		sqsRunnerRequestClient: sqsClient,
 		runnerUpdateCn:         make(chan types.Runner, 100),
-		unhealthyNodesCh:       UnhealthyNodesCh,
-		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease, UnhealthyNodesCh),
+		unhealthyNodesCh:       unhealthyNodesCh,
+		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease, unhealthyNodesCh),
 		runnerManager:          r.NewManager(etcdClient, config.EtcdRunnersKey, configuration.EtcdRunnerFinishedLease),
 	}, nil
 }
