@@ -10,7 +10,6 @@ runners:
     restartOnFailure: false
     noGraphics: true        # optional
     cacheVolumePath: ""     # optional
-    releaseVersion: 1.0.0
     runnerGroup: group0
     startupProbe:           # optional
       githubRunnerGet: {}
@@ -37,7 +36,6 @@ runners:
     restartOnFailure: false # optional
     noGraphics: true        # optional
     cacheVolumePath: ""     # optional
-    releaseVersion: 1.0.0
     runnerGroup: group0
     startupProbe:           # optional
       githubRunnerGet: {}

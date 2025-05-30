@@ -57,12 +57,11 @@ type RunnerCondition struct {
 }
 
 type RunnerConfig struct {
-	StartupProbe   *t.Probe `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
-	LivenessProbe  *t.Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
-	ReleaseVersion string   `json:"releaseVersion" yaml:"releaseVersion"`
-	RunnerGroup    string   `json:"runnerGroup" yaml:"runnerGroup"`
-	Name           string   `json:"name" yaml:"name"`
-	BaseImage      string   `json:"baseImage" yaml:"baseImage"`
+	StartupProbe  *t.Probe `json:"startupProbe,omitempty" yaml:"startupProbe,omitempty"`
+	LivenessProbe *t.Probe `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
+	RunnerGroup   string   `json:"runnerGroup" yaml:"runnerGroup"`
+	Name          string   `json:"name" yaml:"name"`
+	BaseImage     string   `json:"baseImage" yaml:"baseImage"`
 	// JitConfig is ACTIONS_RUNNER_INPUT_JITCONFIG environment variable passed by Actions Runner Controller.
 	// Temporary solution before Runners Listener is implemented.
 	JitConfig              string            `json:"jitConfig,omitempty" yaml:"jitConfig,omitempty"`
