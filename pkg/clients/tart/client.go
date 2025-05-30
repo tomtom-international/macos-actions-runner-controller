@@ -25,7 +25,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
@@ -176,7 +175,7 @@ func (c *Client) SetupRunnerConfiguration(
 	if err != nil {
 		return "", fmt.Errorf("failed to set runner hosts: %s", err.Error())
 	}
-	err = c.setRunnerHostname(runnerConfigFolder, config.RunnerHostname, runnerID, config.ReleaseVersion)
+	err = c.setRunnerHostname(runnerConfigFolder, config.RunnerHostname, runnerID)
 	if err != nil {
 		return "", fmt.Errorf("failed to set runner hostname: %s", err.Error())
 	}
@@ -202,7 +201,7 @@ func (c *Client) SetupRunnerConfiguration(
 		if err != nil {
 			return "", fmt.Errorf("failed to set runner github registration token: %s", err.Error())
 		}
-		ghaRunnerName, err = c.setGhaRunnerName(nodeName, runnerConfigFolder, runnerID, config.ReleaseVersion)
+		ghaRunnerName, err = c.setGhaRunnerName(nodeName, runnerConfigFolder, runnerID)
 		if err != nil {
 			return "", fmt.Errorf("failed to set github action runner name: %s", err.Error())
 		}
@@ -296,11 +295,9 @@ func (c *Client) setRunnerHosts(runnerConfigFolder string, runnerHosts []types.R
 	return nil
 }
 
-func (c *Client) setRunnerHostname(runnerConfigFolder string, hostname string, runnerID string, runnerVersion string) error {
+func (c *Client) setRunnerHostname(runnerConfigFolder string, hostname string, runnerID string) error {
 	if hostname == "" {
-		timestamp := time.Now().Unix()
-		version := strings.ReplaceAll(runnerVersion, ".", "-")
-		hostname = fmt.Sprintf("runner-%v-%v-v%v.local", runnerID, timestamp, version)
+		hostname = fmt.Sprintf("runner-%v", runnerID)
 	}
 	return writeToFile(path.Join(runnerConfigFolder, runnerHostname), hostname)
 }
@@ -320,13 +317,12 @@ func (c *Client) setRegistrationToken(runnerConfigFolder string, token string) e
 	return writeToFile(path.Join(runnerConfigFolder, runnerRegistrationTokenFile), token)
 }
 
-func (c *Client) setGhaRunnerName(nodeName string, runnerConfigFolder string, runnerID string, runnerVersion string) (string, error) {
-	timestamp := time.Now().Unix()
+func (c *Client) setGhaRunnerName(nodeName string, runnerConfigFolder string, runnerID string) (string, error) {
 	if strings.IndexByte(nodeName, '.') != -1 {
 		nodeName = nodeName[:strings.IndexByte(nodeName, '.')]
 	}
 
-	ghaRunnerName := fmt.Sprintf("%v-%v-%v-v%v", nodeName, runnerID, timestamp, runnerVersion)
+	ghaRunnerName := fmt.Sprintf("%v-%v", nodeName, runnerID)
 
 	err := writeToFile(path.Join(runnerConfigFolder, runnerNameFile), ghaRunnerName)
 	if err != nil {

@@ -149,7 +149,7 @@ func (w *worker) startRunner() error {
 	// It uses short Runner ID due to the limitation of the GHA runner name length.
 	ghaRunnerName, err := w.runnerManager.tartClient.SetupRunnerConfiguration(
 		w.runnerManager.nodeName,
-		string(w.runner.ID.Short()),
+		string(w.runner.ID),
 		w.runner.TartVMName,
 		w.runner.Config,
 		registrationToken.GetToken())
