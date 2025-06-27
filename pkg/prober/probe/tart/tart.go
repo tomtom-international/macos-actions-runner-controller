@@ -40,7 +40,7 @@ func New(tartClient *tart.Client) Prober {
 func (t tartProber) Probe(tartVMName string) (probe.Result, string, error) {
 	_, err := t.client.GetTartVMIP(tartVMName)
 	if err != nil {
-		return probe.Failure, fmt.Sprintf("Failed to get tart VM %s IP", tartVMName), err
+		return probe.Failure, fmt.Sprintf("Failed to get tart VM %s IP", tartVMName), nil
 	}
 
 	return probe.Success, "tart probe success", nil

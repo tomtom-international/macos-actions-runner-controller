@@ -40,11 +40,11 @@ type githubProber struct {
 func (g githubProber) Probe(runnerName string) (probe.Result, string, error) {
 	runners, err := g.client.GetRunnerByName(runnerName)
 	if err != nil {
-		return probe.Failure, fmt.Sprintf("Failed to get runner <%v> from github", runnerName), err
+		return probe.Failure, fmt.Sprintf("Failed to get runner <%s> from github", runnerName), err
 	}
 
 	if len(runners.Runners) == 0 {
-		return probe.Failure, fmt.Sprintf("Runner <%v> not registered on github", runnerName), nil
+		return probe.Failure, fmt.Sprintf("Runner <%s> not registered on github", runnerName), nil
 	}
 
 	return probe.Success, "github probe success", nil
