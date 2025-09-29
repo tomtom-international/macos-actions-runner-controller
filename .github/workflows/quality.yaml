@@ -25,7 +25,7 @@ jobs:
     name: Conventional Commit Check
     runs-on: ubuntu-latest
     steps:
-      - uses: tomtom-international/commisery-action@v3
+      - uses: tomtom-international/commisery-action@v4
         with:
           token: ${{ github.token }}
           config: .commisery.yml
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR Title
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
