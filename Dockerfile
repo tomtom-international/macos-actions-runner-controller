@@ -24,4 +24,7 @@ WORKDIR /
 ARG TARGET_APP
 
 COPY --from=build /out/${TARGET_APP} /app
+
+USER 65532:65532
+
 ENTRYPOINT [ "/app" ]
