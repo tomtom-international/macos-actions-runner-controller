@@ -40,8 +40,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
-          cache: true
+          go-version-file: 'go.mod'
+          cache: false
 
       - name: Build Release artifacts
         run: make release VERSION=${{ needs.setup.outputs.release_version }}

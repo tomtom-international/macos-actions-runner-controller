@@ -50,22 +50,27 @@ type ControllerInterface interface {
 	ProcessRunnersStatusUpdate(update types.RunnerStatusUpdate) (*types.Runner, error)
 }
 
-func NewServer(controller ControllerInterface) http.Handler {
+func NewServer(controller ControllerInterface, origins string) http.Handler {
 	r := mux.NewRouter()
 	core.SetupGenericHandlers(r)
 	s := r.PathPrefix("/api/v1").Subrouter()
 	SetupAuditRoutes(s)
-	SetupNodePoolRoutes(s, controller)
-	SetupWatcherRoutes(r, controller)
-	SetupRunnersRoutes(s, controller)
+	SetupNodePoolRoutes(s, controller, origins)
+	SetupWatcherRoutes(r, controller, origins)
+	SetupRunnersRoutes(s, controller, origins)
 	// TODO refactor cors middleware
 	r.Use(mux.CORSMethodMiddleware(r))
 	return r
 }
 
-func ListenAndServeControllerServer(controller ControllerInterface, address net.IP, port string) {
+func ListenAndServeControllerServer(
+	controller ControllerInterface,
+	address net.IP,
+	port string,
+	origins string,
+) {
 	logger.Infof("Starting to listen address %s port %s", address, port)
-	handler := NewServer(controller)
+	handler := NewServer(controller, origins)
 
 	s := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", address, port),
