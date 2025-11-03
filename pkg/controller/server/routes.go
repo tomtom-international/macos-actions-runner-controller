@@ -25,8 +25,8 @@ func SetupAuditRoutes(r *mux.Router) {
 	r.HandleFunc("/health", HealthCheckHandler()).Methods("GET")
 }
 
-func SetupNodePoolRoutes(r *mux.Router, c ControllerInterface) {
-	r.HandleFunc("/nodes", GetNodeListHandler(c)).Methods("GET", "OPTIONS")
+func SetupNodePoolRoutes(r *mux.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("/nodes", GetNodeListHandler(c, origins)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/nodes/register", RegisterNodeHandler(c)).Methods("POST")
 	r.HandleFunc("/nodes/{node_uid}", GetNodeHandler(c)).Methods("GET")
 	r.HandleFunc("/nodes/{node_uid}/status", NodeHeartbeatHandler(c)).Methods("PUT")
@@ -35,12 +35,12 @@ func SetupNodePoolRoutes(r *mux.Router, c ControllerInterface) {
 	r.HandleFunc("/nodes/{node_uid}/disable", UpdateNodeStatusHandler(c, types.Disabled)).Methods("PUT")
 }
 
-func SetupRunnersRoutes(r *mux.Router, c ControllerInterface) {
-	r.HandleFunc("/runners", GetRunnerListHandler(c)).Methods("GET", "OPTIONS")
+func SetupRunnersRoutes(r *mux.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("/runners", GetRunnerListHandler(c, origins)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/runners/{runner_uid}", GetRunnerHandler(c)).Methods("GET")
 	r.HandleFunc("/runners/{runner_uid}/status", GetRunnerStatusUpdateHandler(c)).Methods("PUT")
 }
 
-func SetupWatcherRoutes(r *mux.Router, c ControllerInterface) {
-	r.HandleFunc("/ws/watch", WatcherHandler(c)).Methods("GET")
+func SetupWatcherRoutes(r *mux.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("/ws/watch", WatcherHandler(c, origins)).Methods("GET")
 }

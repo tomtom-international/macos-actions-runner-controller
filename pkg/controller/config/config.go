@@ -28,6 +28,7 @@ type ControllerConfig struct {
 	Port                   string   `env:"PORT" envDefault:"8043"`
 	AwsRegion              string   `env:"AWS_REGION" envDefault:"eu-west-1"`
 	AwsRunnerRequestSQSUrl string   `env:"AWS_RUNNER_REQUEST_SQS_URL"`
+	CORSAllowedOrigins     string   `env:"CORS_ALLOWED_ORIGINS" envDefault:"*"`
 	EtcdEndpoints          []string `env:"ETCD_ENDPOINTS" envDefault:"http://localhost:2379,"`
 	// EtcdNodeDeregisterLease is the lease time in seconds for the node deregister
 	EtcdNodeDeregisterLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"3600"`

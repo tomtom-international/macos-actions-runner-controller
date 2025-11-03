@@ -18,22 +18,37 @@ package server
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 )
 
-// TODO: validate origin
 // TODO: remove debug logs
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-func WatcherHandler(controller ControllerInterface) http.HandlerFunc {
+func WatcherHandler(controller ControllerInterface, allowedOrigins string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		origins := parseOrigins(allowedOrigins)
+
+		upgrader := websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+
+				if origin == "" {
+					logger.Debugf("WebSocket connection with no Origin header")
+					return true
+				}
+
+				allowed := isOriginAllowed(origin, origins)
+				if !allowed {
+					logger.Warnf("WebSocket connection rejected from origin: %s", origin)
+				}
+				return allowed
+			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			logger.Errorf("Websocket connection upgrade failed: %v", err)
@@ -74,4 +89,48 @@ func WatcherHandler(controller ControllerInterface) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+// parseOrigins parses a comma-separated list of allowed origins
+func parseOrigins(originsStr string) []string {
+	if originsStr == "" || originsStr == "*" {
+		return []string{"*"}
+	}
+
+	origins := strings.Split(originsStr, ",")
+	result := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
+// isOriginAllowed checks if the given origin is in the allowed list
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
+		return true
+	}
+
+	origin = strings.TrimSuffix(origin, "/")
+
+	for _, allowed := range allowedOrigins {
+		allowed = strings.TrimSuffix(allowed, "/")
+
+		if origin == allowed {
+			return true
+		}
+
+		if strings.HasPrefix(allowed, "*.") {
+			domain := allowed[2:]
+			if strings.HasSuffix(origin, domain) ||
+				strings.Contains(origin, "://") && strings.HasSuffix(strings.Split(origin, "://")[1], domain) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

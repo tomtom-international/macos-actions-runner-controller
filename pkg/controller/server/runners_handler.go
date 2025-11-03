@@ -27,10 +27,10 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 
-func GetRunnerListHandler(c ControllerInterface) http.HandlerFunc {
+func GetRunnerListHandler(c ControllerInterface, origins string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", origins)
 		if r.Method == http.MethodOptions {
 			return
 		}

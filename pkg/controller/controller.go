@@ -38,7 +38,7 @@ import (
 )
 
 type Controller struct {
-	EtcdClient             *etcd.EtcdClient
+	etcdClient             *etcd.EtcdClient
 	nodePoolManager        *np.Manager
 	sqsRunnerRequestClient *sqs.SQSClient
 	runnerManager          *r.Manager
@@ -67,7 +67,7 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 	}
 
 	return &Controller{
-		EtcdClient:             etcdClient,
+		etcdClient:             etcdClient,
 		sqsRunnerRequestClient: sqsClient,
 		runnerUpdateCn:         make(chan types.Runner, 100),
 		nodePoolManager:        np.NewManager(etcdClient, config.EtcdNodePoolKey, configuration.EtcdNodeDeregisterLease),
@@ -78,7 +78,8 @@ func NewController(configuration config.ControllerConfig) (*Controller, error) {
 func (c *Controller) ListenAndServe(configuration config.ControllerConfig) {
 	address := net.ParseIP(configuration.Address)
 	port := configuration.Port
-	server.ListenAndServeControllerServer(c, address, port)
+	origins := configuration.CORSAllowedOrigins
+	server.ListenAndServeControllerServer(c, address, port, origins)
 }
 
 func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
@@ -96,6 +97,18 @@ func (c *Controller) Run(ctx context.Context, wg *sync.WaitGroup) {
 		defer wg.Done()
 		scheduler.startScheduler(ctx)
 	}()
+}
+
+// Stop gracefully shuts down the controller
+func (c *Controller) Stop() error {
+	if c.etcdClient != nil {
+		if err := c.etcdClient.Close(); err != nil {
+			return fmt.Errorf("failed to close etcd client: %w", err)
+		}
+		logger.Infof("Etcd client closed")
+	}
+
+	return nil
 }
 
 func (c *Controller) RegisterNewNode(request types.NodeRegistrationRequest) (types.NodeRegistrationStatus, *types.Node, error) {

@@ -26,7 +26,6 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
@@ -97,14 +96,7 @@ func Run(c *controller.Controller) {
 	// Create a context that is canceled on SIGINT or SIGTERM signal
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
-	defer func(EtcdClient *etcd.EtcdClient) {
-		logger.Debugf("Closing etcd client")
-		err := EtcdClient.Close()
-		if err != nil {
-			logger.Fatalf("%v", err)
-		}
-	}(c.EtcdClient)
+	defer c.Stop()
 
 	var wg sync.WaitGroup
 	go c.Run(ctx, &wg)
