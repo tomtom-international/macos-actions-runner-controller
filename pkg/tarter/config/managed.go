@@ -19,15 +19,16 @@ package config
 import (
 	"os"
 
+	controllerClient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"gopkg.in/yaml.v3"
 )
 
 type ManagedConfig struct {
-	Controller   ControllerConfig     `yaml:"controller"`
-	Runners      []types.RunnerConfig `yaml:"runners"`
-	NodeCapacity NodeCapacity         `yaml:"nodeCapacity"`
+	Controller   controllerClient.ClientConfig `yaml:"controller"`
+	Runners      []types.RunnerConfig          `yaml:"runners"`
+	NodeCapacity NodeCapacity                  `yaml:"nodeCapacity"`
 }
 
 func (c *ManagedConfig) ReadConfig(path string) error {
@@ -48,7 +49,7 @@ func (c *ManagedConfig) GetRunnersConfig() []types.RunnerConfig {
 	return c.Runners
 }
 
-func (c *ManagedConfig) GetControllerConfig() ControllerConfig {
+func (c *ManagedConfig) GetControllerConfig() controllerClient.ClientConfig {
 	return c.Controller
 }
 

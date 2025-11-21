@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/controller"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
@@ -28,7 +29,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/probe"
 	pt "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/events"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/node"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/prober/results"

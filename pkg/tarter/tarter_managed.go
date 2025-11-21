@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/events"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/node"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/types"

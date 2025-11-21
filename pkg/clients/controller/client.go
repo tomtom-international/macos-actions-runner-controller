@@ -25,7 +25,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/rest"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 
@@ -33,9 +32,17 @@ type Client struct {
 	restClient *rest.RESTClient
 }
 
-func NewClient(config config.ControllerConfig) (*Client, error) {
+type ClientConfig struct {
+	Server         string `json:"server" yaml:"server"`
+	APIVersionPath string `json:"apiVersionPath" yaml:"apiVersionPath"`
+}
+
+func NewClient(cfg ClientConfig) (*Client, error) {
+	if err := validateConfig(cfg); err != nil {
+		return nil, err
+	}
 	httpClient := &http.Client{}
-	restClient, err := rest.NewRESTClient(config.Server, config.APIVersionPath, "", httpClient)
+	restClient, err := rest.NewRESTClient(cfg.Server, cfg.APIVersionPath, "", httpClient)
 
 	if err != nil {
 		return nil, err
@@ -43,6 +50,13 @@ func NewClient(config config.ControllerConfig) (*Client, error) {
 	return &Client{
 		restClient: restClient,
 	}, nil
+}
+
+func validateConfig(cfg ClientConfig) error {
+	if cfg.Server == "" {
+		return fmt.Errorf("controller server URL is required")
+	}
+	return nil
 }
 
 func (c *Client) RegisterNode(ctx context.Context, node types.Node) (*types.Node, error) {
@@ -165,6 +179,99 @@ func (c *Client) UpdateRunnerStatus(ctx context.Context, update types.RunnerStat
 	response := c.restClient.Put().
 		SubPath(fmt.Sprintf("/runners/%s/status", update.ID)).
 		Body(payload).
+		Do(ctx)
+
+	if response.Err != nil {
+		return &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: response.Err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) GetNodes(ctx context.Context) ([]types.Node, error) {
+	response := c.restClient.Get().
+		SubPath("/nodes").
+		Do(ctx)
+
+	if response.Err != nil {
+		return nil, &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: response.Err.Error(),
+		}
+	}
+
+	var nodes []types.Node
+	if err := json.Unmarshal(response.Body, &nodes); err != nil {
+		logger.Errorf("Failed to read get nodes response: %v", err)
+		return nil, &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: err.Error(),
+		}
+	}
+
+	return nodes, nil
+}
+
+func (c *Client) DisableNode(ctx context.Context, nodeID utils.UID) error {
+	response := c.restClient.Put().
+		SubPath(fmt.Sprintf("/nodes/%s/disable", nodeID)).
+		Do(ctx)
+
+	if response.Err != nil {
+		return &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: response.Err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) DeregisterNode(ctx context.Context, nodeID utils.UID) error {
+	response := c.restClient.Put().
+		SubPath(fmt.Sprintf("/nodes/%s/deregister", nodeID)).
+		Do(ctx)
+
+	if response.Err != nil {
+		return &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: response.Err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) GetNodeInfo(ctx context.Context, nodeID utils.UID) (*types.Node, error) {
+	response := c.restClient.Get().
+		SubPath(fmt.Sprintf("/nodes/%s", nodeID)).
+		Do(ctx)
+
+	if response.Err != nil {
+		return nil, &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: response.Err.Error(),
+		}
+	}
+
+	var node types.Node
+	if err := json.Unmarshal(response.Body, &node); err != nil {
+		logger.Errorf("Failed to read get node info response: %v", err)
+		return nil, &ControllerErrors{
+			Reason:  getStatusReason(response.StatusCode),
+			Message: err.Error(),
+		}
+	}
+
+	return &node, nil
+}
+
+func (c *Client) EnableNode(ctx context.Context, nodeID utils.UID) error {
+	response := c.restClient.Put().
+		SubPath(fmt.Sprintf("/nodes/%s/enable", nodeID)).
 		Do(ctx)
 
 	if response.Err != nil {
