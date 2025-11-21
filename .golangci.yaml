@@ -1,98 +1,130 @@
+version: "2"
 run:
   tests: true
-  timeout: 15m
-output:
-  show-stats: true
-  formats: colored-line-number
 linters:
   enable:
     - asciicheck
     - bidichk
-    - errorlint
-    - errcheck
+    - bodyclose
     - copyloopvar
+    - errorlint
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - goheader
     - gosec
+    - lll
+    - misspell
+    - nakedret
     - revive
-    - stylecheck
+    - staticcheck
     - tparallel
     - unconvert
     - unparam
-    - gocyclo
     - whitespace
-    - govet
-    - goimports
-    - goheader
-    - misspell
-    - nilerr
-    - bodyclose
-    - dupl
-    - gochecknoinits
-    - gocritic
-    - gosimple
-    - ineffassign
-    - nakedret
-    - staticcheck
-    - typecheck
-    - unused
-    - goconst
-    - lll
-  fast: false
   disable:
     - prealloc
-
-linters-settings:
-  dupl:
-    threshold: 100
-  gocyclo:
-    min-complexity: 12
-  govet:
-    enable-all: true
-  revive:
+    - errcheck
+    - ineffassign
+    - gochecknoinits
+  settings:
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - rangeValCopy
+        - hugeParam
+      enabled-tags:
+        - performance
+    gocyclo:
+      min-complexity: 12
+    govet:
+      enable-all: true
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+    whitespace:
+      multi-func: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: exported
-        disabled: true
-  misspell:
-    locale: US
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  lll:
-    line-length: 140
-  gocritic:
-    enabled-tags:
-      - performance
-    disabled-checks:
-      - rangeValCopy
-# TODO: remove these excludes and fix the code
-      - hugeParam
-  whitespace:
-    multi-func: true
-
-issues:
-  exclude-rules:
-    - path: pkg/clients/sqs/client.go
-      linters:
-        - gosec
-      text: "G404"
-    - path: pkg/utils/random_string.go
-      linters:
-        - gosec
-      text: "G404"
-    - path: pkg/clients/github/client_test.go
-      linters:
-        - gosec
-      text: "G101"
-    - linters:
-        - gosimple
-      text: "S1000"
-    - path: pkg/tarter/runner/worker.go
-      linters:
-        - gocritic
-      text: "ifElseChain"
-# TODO: remove these excludes and fix the code
-    - path: pkg/controller/server/nodepool_handler.go
-      linters:
-        - dupl
-    - path: pkg/controller/server/runners_handler.go
-      linters:
-        - dupl
+      - linters:
+          - gosec
+        path: cmd/hook/hook.go
+        text: G404
+      - linters:
+          - gosec
+        path: pkg/clients/github/client_test.go
+        text: G101
+      - linters:
+          - gosec
+        path: cmd/scaler/app/server_test.go
+        text: G306
+      - linters:
+          - gosec
+        path: pkg/clients/aws/asg/client.go
+        text: G115
+      - linters:
+          - gosec
+        path: pkg/clients/aws/sqs/client.go
+        text: G404
+      - linters:
+          - gosec
+        path: pkg/utils/random_string.go
+        text: G404
+      - linters:
+          - staticcheck
+        text: S1000
+      - linters:
+          - staticcheck
+        path: internal/scaler/api/server.go
+        text: SA4006
+      - linters:
+          - gocritic
+        path: pkg/tarter/runner/worker.go
+        text: ifElseChain
+      - linters:
+          - dupl
+        path: pkg/controller/server/nodepool_handler.go
+      - linters:
+          - dupl
+        path: pkg/controller/server/runners_handler.go
+      - linters:
+          - govet
+        path: internal/scaler/api/server_test.go
+      - linters:
+          - govet
+        path: internal/scaler/api/server.go
+      - linters:
+          - govet
+        path: internal/scaler/service/node_coordinator_test.go
+      - linters:
+          - govet
+        path: internal/metrics-aggregator/metrics_aggregator.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

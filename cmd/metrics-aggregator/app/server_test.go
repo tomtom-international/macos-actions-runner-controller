@@ -17,9 +17,10 @@
 package app
 
 import (
-	"github.com/tomtom-international/macos-actions-runner-controller/internal/metrics-aggregator/config"
 	"os"
 	"testing"
+
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/metrics-aggregator/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,7 +96,6 @@ func TestEnvironmentVariables(t *testing.T) {
 }
 
 func TestRunE(t *testing.T) {
-
 	t.Run("should return error when tarter URL is empty", func(t *testing.T) {
 		cmd := NewMetricsAggregatorCommand()
 		preRunE := cmd.PersistentPreRunE

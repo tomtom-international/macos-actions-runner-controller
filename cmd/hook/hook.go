@@ -31,8 +31,8 @@ import (
 
 	"github.com/caarlos0/env"
 	"github.com/google/go-github/v61/github"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/aws/sqs"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"gopkg.in/yaml.v3"

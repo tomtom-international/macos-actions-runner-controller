@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -27,8 +30,6 @@ import (
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	tarter "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/rest"
-	"net/http"
-	"time"
 )
 
 const (
@@ -46,9 +47,9 @@ type TartVM struct {
 
 // MetricsResult holds the result of scraping a single VM
 type MetricsResult struct {
+	Error          error
 	VM             TartVM
 	MetricFamilies []*dto.MetricFamily
-	Error          error
 }
 
 type MetricsAggregator struct {
@@ -140,7 +141,6 @@ func (ma *MetricsAggregator) CollectRunnersMetrics() (string, error) {
 				MetricFamilies: metricFamilies,
 				Error:          err,
 			}
-
 		}(vm)
 	}
 
@@ -362,7 +362,7 @@ func (ma *MetricsAggregator) mergeMetricFamilies(families []*dto.MetricFamily) [
 // formatMetricsAsPrometheusText converts metric families back to Prometheus text format
 func (ma *MetricsAggregator) formatMetricsAsPrometheusText(families []*dto.MetricFamily) (string, error) {
 	var buf bytes.Buffer
-	encoder := expfmt.NewEncoder(&buf, expfmt.FmtText)
+	encoder := expfmt.NewEncoder(&buf, expfmt.NewFormat(expfmt.TypeTextPlain))
 
 	for _, family := range families {
 		if err := encoder.Encode(family); err != nil {
