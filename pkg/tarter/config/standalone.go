@@ -19,6 +19,7 @@ package config
 import (
 	"os"
 
+	controllerClient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/controller"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"gopkg.in/yaml.v3"
@@ -47,8 +48,8 @@ func (c *StandaloneConfig) GetRunnersConfig() []types.RunnerConfig {
 	return c.Runners
 }
 
-func (c *StandaloneConfig) GetControllerConfig() ControllerConfig {
-	return ControllerConfig{}
+func (c *StandaloneConfig) GetControllerConfig() controllerClient.ClientConfig {
+	return controllerClient.ClientConfig{}
 }
 
 func (c *StandaloneConfig) GetNodeCapacity() NodeCapacity {

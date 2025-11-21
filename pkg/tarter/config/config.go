@@ -17,6 +17,7 @@
 package config
 
 import (
+	controllerClient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/controller"
 	ghclient "github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/github"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	u "github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -47,14 +48,9 @@ type TarterConfig struct {
 
 type Config interface {
 	GetRunnersConfig() []types.RunnerConfig
-	GetControllerConfig() ControllerConfig
+	GetControllerConfig() controllerClient.ClientConfig
 	GetNodeCapacity() NodeCapacity
 	ReadConfig(path string) error
-}
-
-type ControllerConfig struct {
-	Server         string `json:"server" yaml:"server"`
-	APIVersionPath string `json:"apiVersionPath" yaml:"apiVersionPath"`
 }
 
 type NodeCapacity struct {
