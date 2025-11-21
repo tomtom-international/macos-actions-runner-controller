@@ -17,11 +17,15 @@ services:
       - |
         sleep 5
         awslocal sqs create-queue --queue-name runner-request
-        awslocal sqs create-queue --queue-name runner-request-dlq
-        export DLQ_ARN=arn:aws:sqs:$${AWS_DEFAULT_REGION}:000000000000:runner-request-dlq
+        awslocal sqs create-queue --queue-name scaler-event
+        awslocal sqs create-queue --queue-name dlq
+        export DLQ_ARN=arn:aws:sqs:$${AWS_DEFAULT_REGION}:000000000000:dlq
         export REDRIVE_POLICY="{\"RedrivePolicy\": \"{\\\"maxReceiveCount\\\":\\\"2\\\",\\\"deadLetterTargetArn\\\":\\\"$$DLQ_ARN\\\"}\"}"
         awslocal sqs set-queue-attributes \
           --queue-url http://sqs.$${AWS_DEFAULT_REGION}.localhost.localstack.cloud:4566/000000000000/runner-request \
+          --attributes "$$REDRIVE_POLICY"
+        awslocal sqs set-queue-attributes \
+          --queue-url http://sqs.$${AWS_DEFAULT_REGION}.localhost.localstack.cloud:4566/000000000000/scaler-event \
           --attributes "$$REDRIVE_POLICY"
     depends_on:
       - localstack
