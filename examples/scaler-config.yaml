@@ -1,0 +1,10 @@
+---
+scalingGroups:
+  - name: group-1
+    schedules:
+      - name: "weekend-scale-down"
+        cron: "0 0 20 * * 5"  # 8 PM Friday
+        desiredCapacity: 10
+      - name: "weekday-scale-up"
+        cron: "0 0 8 * * 1-5"  # 8 AM weekdays
+        desiredCapacity: 40

@@ -45,6 +45,9 @@ build-hook:
 fmt:
 	go fmt ./...
 
+test:
+	go test ./...
+
 # Run go vet against code
 vet:
 	go vet ./...
@@ -52,7 +55,7 @@ vet:
 lint:
 	golangci-lint run ./...
 
-docker: docker-hook docker-controller
+docker: docker-hook docker-controller docker-scaler
 
 docker-buildx:
 	@echo "Checkin existing buildx platforms"
@@ -81,6 +84,17 @@ docker-controller:
 	--build-arg COMMIT_SHA=${COMMIT_SHA} \
 	--build-arg BUILD_DATE=${BUILD_DATE} \
 	-t "${IMAGE_REPO}/controller:${VERSION}" \
+	-f Dockerfile \
+	. ${PUSH_ARG}
+
+docker-scaler:
+	@echo "Building controller docker image"
+	docker buildx build ${PLATFORMS_ARG} \
+	--build-arg TARGET_APP=scaler \
+	--build-arg VERSION=${VERSION} \
+	--build-arg COMMIT_SHA=${COMMIT_SHA} \
+	--build-arg BUILD_DATE=${BUILD_DATE} \
+	-t "${IMAGE_REPO}/scaler:${VERSION}" \
 	-f Dockerfile \
 	. ${PUSH_ARG}
 
