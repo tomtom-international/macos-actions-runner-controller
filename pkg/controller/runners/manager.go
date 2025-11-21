@@ -31,14 +31,14 @@ import (
 )
 
 type Manager struct {
-	etcdClient              *etcd.EtcdClient
+	etcdClient              *etcd.Client
 	runnersWatcher          *runnersWatcher
 	etcdKeyPrefix           string
 	etcdRunnerFinishedLease int
 	runnersWatcherLock      sync.RWMutex
 }
 
-func NewManager(etcdClient *etcd.EtcdClient, etcdKeyPrefix string, etcdRunnerFinishedLease int) *Manager {
+func NewManager(etcdClient *etcd.Client, etcdKeyPrefix string, etcdRunnerFinishedLease int) *Manager {
 	return &Manager{
 		etcdClient:              etcdClient,
 		etcdKeyPrefix:           etcdKeyPrefix,

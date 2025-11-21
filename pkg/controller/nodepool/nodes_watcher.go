@@ -19,7 +19,6 @@ package nodepool
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -34,7 +33,7 @@ import (
 
 type nodesWatcher struct {
 	ctx         context.Context
-	etcdClient  *etcd.EtcdClient
+	etcdClient  *etcd.Client
 	subscribers map[*websocket.Conn]chan types.WatcherNodesUpdate
 	cancelFn    context.CancelFunc
 	manager     *Manager
@@ -46,7 +45,7 @@ type nodesWatcher struct {
 func newNodesWatcher(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	etcdClient *etcd.EtcdClient,
+	etcdClient *etcd.Client,
 	key string,
 	manager *Manager,
 ) *nodesWatcher {
@@ -74,13 +73,13 @@ func (w *nodesWatcher) watch() {
 				return
 			case watchResp, ok := <-watchChan:
 				if !ok {
-					w.etcdClient.ErrChan <- fmt.Errorf("nodes watcher channel closed, attempting to reconnect")
+					logger.Errorf("Nodes watcher channel closed, attempting to reconnect")
 					time.Sleep(time.Second)
 					break
 				}
 
 				if watchResp.Err() != nil {
-					w.etcdClient.ErrChan <- fmt.Errorf("nodes watcher error for key %s: %v", w.key, watchResp.Err().Error())
+					logger.Errorf("Nodes watcher error for key %s: %v", w.key, watchResp.Err())
 					break
 				}
 
@@ -93,7 +92,7 @@ func (w *nodesWatcher) watch() {
 						var node types.Node
 						err := json.Unmarshal(event.Kv.Value, &node)
 						if err != nil {
-							w.etcdClient.ErrChan <- fmt.Errorf("failed to unmarshal nodes watcher Put event value. Error: %s", err.Error())
+							logger.Errorf("Failed to unmarshal nodes watcher Put event value. Error: %v", err.Error())
 							continue
 						}
 						nodeUpdate.UpdatedNodes = append(nodeUpdate.UpdatedNodes, node)

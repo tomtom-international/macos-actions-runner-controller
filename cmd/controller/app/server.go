@@ -37,7 +37,6 @@ var (
 )
 
 func NewControllerCommand() *cobra.Command {
-	// TODO: check Etcd Connectivity
 	cmd := &cobra.Command{
 		Use:   "controller",
 		Short: "The MacOS Actions Runner Controller is a controller for autoscaling self-hosted GitHub Actions runners on macOS systems.",
@@ -103,8 +102,8 @@ func Run(c *controller.Controller) {
 	go c.ListenAndServe(configuration)
 
 	// Wait for context cancellation
-	<-ctx.Done()
 	logger.Infof("Starting graceful shutdown...")
+	<-ctx.Done()
 
 	// Wait for all goroutines to finish their work
 	wg.Wait()
