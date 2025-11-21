@@ -69,6 +69,7 @@ func ListenAndServeControllerServer(
 	port string,
 	origins string,
 ) {
+
 	logger.Infof("Starting to listen address %s port %s", address, port)
 	handler := NewServer(controller, origins)
 

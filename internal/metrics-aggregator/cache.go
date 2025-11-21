@@ -21,10 +21,10 @@ import (
 )
 
 type Cache struct {
-	cacheSize int
 	cache     map[string]cacheItem
-	mu        sync.RWMutex
 	keysByAge []string
+	cacheSize int
+	mu        sync.RWMutex
 }
 
 type cacheItem struct {

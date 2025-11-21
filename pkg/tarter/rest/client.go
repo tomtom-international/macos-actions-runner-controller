@@ -71,7 +71,7 @@ func (c *Client) getRunners(ctx context.Context, activeOnly bool) ([]types.Runne
 	if err := json.Unmarshal(response.Body, &runners); err != nil {
 		return nil, &TarterErrors{
 			Reason:  getStatusReason(response.StatusCode),
-			Message: fmt.Errorf("failed to read runner info response: %v", err).Error(),
+			Message: fmt.Errorf("failed to read runner info response: %w", err).Error(),
 		}
 	}
 

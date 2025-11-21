@@ -127,10 +127,8 @@ func loadConfiguration(c *config.MetricsAggregatorConfig) error {
 }
 
 func validateConfig(c *config.MetricsAggregatorConfig) error {
-
 	if c.TarterURL == "" {
 		return errors.New("error: Tarter URL is required. Use TARTER_URL environment variable")
 	}
-
 	return nil
 }

@@ -130,17 +130,17 @@ func TestNew(t *testing.T) {
 		{
 			name:   "Missing AppID",
 			config: ClientConfig{InstallationID: 123, PrivateKeyFile: "key.pem", Organization: "org"},
-			errMsg: "AppID is required",
+			errMsg: "config parameter AppID is required",
 		},
 		{
 			name:   "Missing InstallationID",
 			config: ClientConfig{AppID: 123, PrivateKeyFile: "key.pem", Organization: "org"},
-			errMsg: "InstallationID is required",
+			errMsg: "config parameter InstallationID is required",
 		},
 		{
 			name:   "Missing Organization",
 			config: ClientConfig{AppID: 123, InstallationID: 456, PrivateKeyFile: "key.pem"},
-			errMsg: "Organization is required",
+			errMsg: "config parameter Organization is required",
 		},
 		{
 			name:   "Missing PrivateKey and PrivateKeyFile",
