@@ -19,7 +19,6 @@ package runners
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -34,7 +33,7 @@ import (
 
 type runnersWatcher struct {
 	ctx         context.Context
-	etcdClient  *etcd.EtcdClient
+	etcdClient  *etcd.Client
 	subscribers map[*websocket.Conn]chan types.WatcherRunnersUpdate
 	cancelFn    context.CancelFunc
 	manager     *Manager
@@ -46,7 +45,7 @@ type runnersWatcher struct {
 func newRunnersWatcher(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	etcdClient *etcd.EtcdClient,
+	etcdClient *etcd.Client,
 	key string,
 	manager *Manager,
 ) *runnersWatcher {
@@ -72,13 +71,13 @@ func (w *runnersWatcher) watch() {
 				return
 			case watchResp, ok := <-watchChan:
 				if !ok {
-					w.etcdClient.ErrChan <- fmt.Errorf("runners watcher channel closed, attempting to reconnect")
+					logger.Errorf("Runners watcher channel closed, attempting to reconnect")
 					time.Sleep(time.Second)
 					break
 				}
 
 				if watchResp.Err() != nil {
-					w.etcdClient.ErrChan <- fmt.Errorf("runners watcher error for key %s: %v", w.key, watchResp.Err().Error())
+					logger.Errorf("Runners watcher error for key %s: %v", w.key, watchResp.Err())
 					break
 				}
 
@@ -92,7 +91,7 @@ func (w *runnersWatcher) watch() {
 						err := json.Unmarshal(event.Kv.Value, &runner)
 						if err != nil {
 							logger.Debugf("Raw event value: %+v", event.Kv)
-							w.etcdClient.ErrChan <- fmt.Errorf("failed to unmarshal runners watcher Put event value. Error: %s", err.Error())
+							logger.Errorf("Failed to unmarshal runners watcher Put event value. Error: %v", err.Error())
 							continue
 						}
 						runnersUpdate.UpdatedRunners = append(runnersUpdate.UpdatedRunners, runner)

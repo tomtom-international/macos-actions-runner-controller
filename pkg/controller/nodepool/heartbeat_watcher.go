@@ -19,7 +19,6 @@ package nodepool
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"path"
 	"time"
 
@@ -36,7 +35,7 @@ const (
 
 type heartbeatWatcher struct {
 	ctx         context.Context
-	etcdClient  *etcd.EtcdClient
+	etcdClient  *etcd.Client
 	ctxCancel   context.CancelFunc
 	nodeManager *Manager
 	nodeID      utils.UID
@@ -46,7 +45,7 @@ type heartbeatWatcher struct {
 
 func newHeartbeatWatcher(
 	nodeID utils.UID,
-	etcdClient *etcd.EtcdClient,
+	etcdClient *etcd.Client,
 	nodeManager *Manager,
 ) *heartbeatWatcher {
 
@@ -84,13 +83,13 @@ func (w *heartbeatWatcher) run() {
 				return
 			case watchResp, ok := <-watchChan:
 				if !ok {
-					w.etcdClient.ErrChan <- fmt.Errorf("watch channel closed for key %s, attempting to reconnect", w.watchKey)
+					logger.Errorf("Watch channel closed for key %s, attempting to reconnect", w.watchKey)
 					time.Sleep(time.Second)
 					break
 				}
 
 				if watchResp.Err() != nil {
-					w.etcdClient.ErrChan <- fmt.Errorf("watch error for key %s: %w", w.watchKey, watchResp.Err())
+					logger.Errorf("Watch error for key %s: %v", w.watchKey, watchResp.Err())
 					break
 				}
 				for _, ev := range watchResp.Events {

@@ -26,8 +26,8 @@ import (
 
 	sqsTypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/gorilla/websocket"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/aws/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/etcd"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/sqs"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
 	np "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/nodepool"
 	r "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/runners"
@@ -38,7 +38,7 @@ import (
 )
 
 type Controller struct {
-	etcdClient             *etcd.EtcdClient
+	etcdClient             *etcd.Client
 	nodePoolManager        *np.Manager
 	sqsRunnerRequestClient *sqs.SQSClient
 	runnerManager          *r.Manager
@@ -46,10 +46,7 @@ type Controller struct {
 }
 
 func NewController(configuration config.ControllerConfig) (*Controller, error) {
-	etcdClient, err := etcd.NewEtcdClient(
-		configuration.EtcdEndpoints, func(err error) {
-			logger.Errorf("Etcd Error: %s", err.Error())
-		})
+	etcdClient, err := etcd.NewEtcdClient(etcd.ClientConfig{Endpoints: configuration.EtcdEndpoints})
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +102,7 @@ func (c *Controller) Stop() error {
 		if err := c.etcdClient.Close(); err != nil {
 			return fmt.Errorf("failed to close etcd client: %w", err)
 		}
-		logger.Infof("Etcd client closed")
+		logger.Debugf("Etcd client closed")
 	}
 
 	return nil
