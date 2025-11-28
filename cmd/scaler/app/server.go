@@ -130,9 +130,11 @@ func Run(scalingCfg *config.Config) error {
 	}()
 
 	// Wait for context cancellation
-	logger.Infof("Starting graceful shutdown...")
 	<-ctx.Done()
+	logger.Infof("Starting graceful shutdown...")
 
+	wg.Wait()
+	logger.Infof("All operations completed, shutting down")
 	return nil
 }
 
