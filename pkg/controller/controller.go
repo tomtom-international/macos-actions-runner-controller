@@ -46,7 +46,15 @@ type Controller struct {
 }
 
 func NewController(configuration config.ControllerConfig) (*Controller, error) {
-	etcdClient, err := etcd.NewEtcdClient(etcd.ClientConfig{Endpoints: configuration.EtcdEndpoints})
+	etcdClient, err := etcd.NewEtcdClient(etcd.ClientConfig{
+		Endpoints:   configuration.EtcdEndpoints,
+		TLSEnabled:  configuration.EtcdTLSEnabled,
+		TLSCertFile: configuration.EtcdTLSCertFile,
+		TLSKeyFile:  configuration.EtcdTLSKeyFile,
+		TLSCAFile:   configuration.EtcdTLSCAFile,
+		Username:    configuration.EtcdUsername,
+		Password:    configuration.EtcdPassword,
+	})
 	if err != nil {
 		return nil, err
 	}

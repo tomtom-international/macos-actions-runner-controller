@@ -33,11 +33,20 @@ type ControllerConfig struct {
 	// EtcdNodeDeregisterLease is the lease time in seconds for the node deregister
 	EtcdNodeDeregisterLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"3600"`
 	// EtcdRunnerFinishedLease is the lease time in seconds for the runner finished
-	EtcdRunnerFinishedLease int  `env:"ETCD_RUNNER_FINISHED_LEASE" envDefault:"172800"`
-	LogDebug                bool `env:"LOG_DEBUG" envDefault:"false"`
-	LogCaller               bool `env:"LOG_CALLER" envDefault:"false"`
-	LogStacktrace           bool `env:"LOG_STACKTRACE" envDefault:"false"`
-	LogJSON                 bool `env:"LOG_JSON" envDefault:"false"`
+	EtcdRunnerFinishedLease int `env:"ETCD_RUNNER_FINISHED_LEASE" envDefault:"172800"`
+
+	EtcdTLSEnabled  bool   `env:"ETCD_TLS_ENABLED" envDefault:"false"`
+	EtcdTLSCertFile string `env:"ETCD_TLS_CERT_FILE"`
+	EtcdTLSKeyFile  string `env:"ETCD_TLS_KEY_FILE"`
+	EtcdTLSCAFile   string `env:"ETCD_TLS_CA_FILE"`
+
+	EtcdUsername string `env:"ETCD_USERNAME"`
+	EtcdPassword string `env:"ETCD_PASSWORD"`
+
+	LogDebug      bool `env:"LOG_DEBUG" envDefault:"false"`
+	LogCaller     bool `env:"LOG_CALLER" envDefault:"false"`
+	LogStacktrace bool `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogJSON       bool `env:"LOG_JSON" envDefault:"false"`
 }
 
 func LoadConfiguration(c *ControllerConfig) error {

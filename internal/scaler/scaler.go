@@ -59,7 +59,15 @@ func NewScaler(
 	scheduleCfg *config.Config,
 ) (*Scaler, error) {
 
-	etcdClient, err := etcd.NewEtcdClient(etcd.ClientConfig{Endpoints: cfg.EtcdEndpoints})
+	etcdClient, err := etcd.NewEtcdClient(etcd.ClientConfig{
+		Endpoints:   cfg.EtcdEndpoints,
+		TLSEnabled:  cfg.EtcdTLSEnabled,
+		TLSCertFile: cfg.EtcdTLSCertFile,
+		TLSKeyFile:  cfg.EtcdTLSKeyFile,
+		TLSCAFile:   cfg.EtcdTLSCAFile,
+		Username:    cfg.EtcdUsername,
+		Password:    cfg.EtcdPassword,
+	})
 	if err != nil {
 		return nil, err
 	}

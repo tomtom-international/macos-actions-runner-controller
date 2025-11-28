@@ -316,3 +316,183 @@ func TestIntegration_MultipleOperations(t *testing.T) {
 
 	t.Log("Successfully performed 10 Put/Get operations")
 }
+
+// getTLSConfig returns TLS config from environment variables
+func getTLSConfig(t *testing.T) (bool, string, string, string) {
+	tlsEnabled := os.Getenv("ETCD_TLS_ENABLED") == "true"
+	caFile := os.Getenv("ETCD_TLS_CA_FILE")
+	certFile := os.Getenv("ETCD_TLS_CERT_FILE")
+	keyFile := os.Getenv("ETCD_TLS_KEY_FILE")
+	return tlsEnabled, caFile, certFile, keyFile
+}
+
+// getAuthConfig returns authentication config from environment variables
+func getAuthConfig(t *testing.T) (string, string) {
+	username := os.Getenv("ETCD_USERNAME")
+	password := os.Getenv("ETCD_PASSWORD")
+	return username, password
+}
+
+// TestIntegration_TLS_WithCustomCA tests TLS with custom CA certificate
+func TestIntegration_TLS_WithCustomCA(t *testing.T) {
+	endpoints := getEtcdEndpoints(t)
+	tlsEnabled, caFile, certFile, keyFile := getTLSConfig(t)
+
+	if !tlsEnabled {
+		t.Skip("ETCD_TLS_ENABLED not set to 'true', skipping TLS test")
+	}
+
+	if caFile == "" {
+		t.Skip("ETCD_TLS_CA_FILE not set, skipping custom CA test")
+	}
+
+	cfg := ClientConfig{
+		Endpoints:      endpoints,
+		RequestTimeout: 5,
+		TLSEnabled:     true,
+		TLSCAFile:      caFile,
+		TLSCertFile:    certFile, // May be empty
+		TLSKeyFile:     keyFile,  // May be empty
+	}
+
+	client, err := NewEtcdClient(cfg)
+	require.NoError(t, err, "should create client with TLS successfully")
+	require.NotNil(t, client, "client should not be nil")
+	defer client.Close()
+
+	testKey := "/test/tls/customca"
+	testValue := "tls-value"
+
+	err = client.Put(testKey, testValue)
+	require.NoError(t, err, "Put should succeed with TLS")
+
+	value, err := client.Get(testKey)
+	require.NoError(t, err, "Get should succeed with TLS")
+	assert.Equal(t, testValue, value, "value should match")
+
+	t.Logf("Successfully connected with TLS (custom CA) to %v", endpoints)
+}
+
+// TestIntegration_TLS_WithSystemCA tests TLS using system CA pool
+func TestIntegration_TLS_WithSystemCA(t *testing.T) {
+	endpoints := getEtcdEndpoints(t)
+	tlsEnabled, _, _, _ := getTLSConfig(t)
+
+	if !tlsEnabled {
+		t.Skip("ETCD_TLS_ENABLED not set to 'true', skipping TLS test")
+	}
+
+	cfg := ClientConfig{
+		Endpoints:      endpoints,
+		RequestTimeout: 5,
+		TLSEnabled:     true,
+	}
+
+	client, err := NewEtcdClient(cfg)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "certificate") || strings.Contains(err.Error(), "tls") {
+			t.Logf("Expected failure with self-signed cert and system CA: %v", err)
+			return
+		}
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	require.NotNil(t, client, "client should not be nil")
+	defer client.Close()
+
+	testKey := "/test/tls/systemca"
+	testValue := "tls-system-ca-value"
+
+	err = client.Put(testKey, testValue)
+	require.NoError(t, err, "Put should succeed with TLS")
+
+	value, err := client.Get(testKey)
+	require.NoError(t, err, "Get should succeed with TLS")
+	assert.Equal(t, testValue, value, "value should match")
+
+	t.Logf("Successfully connected with TLS (system CA) to %v", endpoints)
+}
+
+// TestIntegration_TLS_WithAuthentication tests TLS with username/password
+func TestIntegration_TLS_WithAuthentication(t *testing.T) {
+	endpoints := getEtcdEndpoints(t)
+	tlsEnabled, caFile, certFile, keyFile := getTLSConfig(t)
+	username, password := getAuthConfig(t)
+
+	if !tlsEnabled {
+		t.Skip("ETCD_TLS_ENABLED not set to 'true', skipping TLS test")
+	}
+
+	if username == "" || password == "" {
+		t.Skip("ETCD_USERNAME or ETCD_PASSWORD not set, skipping auth test")
+	}
+
+	cfg := ClientConfig{
+		Endpoints:      endpoints,
+		RequestTimeout: 5,
+		TLSEnabled:     true,
+		TLSCAFile:      caFile,
+		TLSCertFile:    certFile,
+		TLSKeyFile:     keyFile,
+		Username:       username,
+		Password:       password,
+	}
+
+	client, err := NewEtcdClient(cfg)
+	require.NoError(t, err, "should create client with TLS and auth successfully")
+	require.NotNil(t, client, "client should not be nil")
+	defer client.Close()
+
+	testKey := "/test/tls/auth"
+	testValue := "authenticated-value"
+
+	err = client.Put(testKey, testValue)
+	require.NoError(t, err, "Put should succeed with TLS and auth")
+
+	value, err := client.Get(testKey)
+	require.NoError(t, err, "Get should succeed with TLS and auth")
+	assert.Equal(t, testValue, value, "value should match")
+
+	t.Logf("Successfully connected with TLS and authentication to %v", endpoints)
+}
+
+// TestIntegration_TLS_WithMutualTLS tests mutual TLS (client certificate)
+func TestIntegration_TLS_WithMutualTLS(t *testing.T) {
+	endpoints := getEtcdEndpoints(t)
+	tlsEnabled, caFile, certFile, keyFile := getTLSConfig(t)
+
+	if !tlsEnabled {
+		t.Skip("ETCD_TLS_ENABLED not set to 'true', skipping TLS test")
+	}
+
+	if certFile == "" || keyFile == "" {
+		t.Skip("ETCD_TLS_CERT_FILE or ETCD_TLS_KEY_FILE not set, skipping mutual TLS test")
+	}
+
+	cfg := ClientConfig{
+		Endpoints:      endpoints,
+		RequestTimeout: 5,
+		TLSEnabled:     true,
+		TLSCAFile:      caFile,
+		TLSCertFile:    certFile,
+		TLSKeyFile:     keyFile,
+	}
+
+	client, err := NewEtcdClient(cfg)
+	require.NoError(t, err, "should create client with mutual TLS successfully")
+	require.NotNil(t, client, "client should not be nil")
+	defer client.Close()
+
+	testKey := "/test/tls/mutual"
+	testValue := "mutual-tls-value"
+
+	err = client.Put(testKey, testValue)
+	require.NoError(t, err, "Put should succeed with mutual TLS")
+
+	value, err := client.Get(testKey)
+	require.NoError(t, err, "Get should succeed with mutual TLS")
+	assert.Equal(t, testValue, value, "value should match")
+
+	t.Logf("Successfully connected with mutual TLS to %v", endpoints)
+}
