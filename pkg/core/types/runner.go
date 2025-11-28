@@ -19,7 +19,7 @@ package types
 import (
 	"time"
 
-	t "github.com/tomtom-international/macos-actions-runner-controller/pkg/prober/types"
+	t "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/prober"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 

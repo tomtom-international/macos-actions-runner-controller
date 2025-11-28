@@ -26,12 +26,12 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/config"
 	coreApi "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/api"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/config"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
 )
 

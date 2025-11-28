@@ -26,8 +26,8 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/config"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/controller"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/controller/config"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 )
@@ -102,8 +102,8 @@ func Run(c *controller.Controller) {
 	go c.ListenAndServe(configuration)
 
 	// Wait for context cancellation
-	logger.Infof("Starting graceful shutdown...")
 	<-ctx.Done()
+	logger.Infof("Starting graceful shutdown...")
 
 	// Wait for all goroutines to finish their work
 	wg.Wait()
