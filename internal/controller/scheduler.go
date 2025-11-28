@@ -21,8 +21,8 @@ import (
 	"sort"
 	"time"
 
-	np "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/nodepool"
-	r "github.com/tomtom-international/macos-actions-runner-controller/pkg/controller/runners"
+	np "github.com/tomtom-international/macos-actions-runner-controller/internal/controller/nodepool"
+	r "github.com/tomtom-international/macos-actions-runner-controller/internal/controller/runners"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 )
