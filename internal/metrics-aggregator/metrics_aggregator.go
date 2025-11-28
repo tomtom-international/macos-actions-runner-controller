@@ -27,9 +27,9 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tart"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/clients/tarter"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	tarter "github.com/tomtom-international/macos-actions-runner-controller/pkg/tarter/rest"
 )
 
 const (
