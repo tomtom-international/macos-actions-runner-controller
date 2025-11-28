@@ -18,7 +18,10 @@ package etcd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -29,6 +32,14 @@ const defaultRequestTimeout = 5
 type ClientConfig struct {
 	Endpoints      []string
 	RequestTimeout int // in seconds
+
+	TLSEnabled  bool
+	TLSCertFile string // Path to client certificate
+	TLSKeyFile  string // Path to client key
+	TLSCAFile   string // Path to CA certificate
+
+	Username string
+	Password string
 }
 
 type Client struct {
@@ -49,10 +60,26 @@ func NewEtcdClient(cfg ClientConfig) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client, err := clientv3.New(clientv3.Config{
+	etcdConfig := clientv3.Config{
 		Endpoints:   cfg.Endpoints,
 		DialTimeout: time.Duration(cfg.RequestTimeout) * time.Second,
-	})
+	}
+
+	if cfg.TLSEnabled {
+		tlsConfig, err := loadTLSConfig(cfg.TLSCertFile, cfg.TLSKeyFile, cfg.TLSCAFile)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to load TLS config: %w", err)
+		}
+		etcdConfig.TLS = tlsConfig
+	}
+
+	if cfg.Username != "" && cfg.Password != "" {
+		etcdConfig.Username = cfg.Username
+		etcdConfig.Password = cfg.Password
+	}
+
+	client, err := clientv3.New(etcdConfig)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create etcd client: %w", err)
@@ -155,4 +182,39 @@ func (c *Client) GrantLease(ttl int) (clientv3.LeaseID, error) {
 	defer cancel()
 	lease, err := c.client.Grant(ctx, int64(ttl))
 	return lease.ID, err
+}
+
+// loadTLSConfig creates a TLS configuration for etcd client authentication
+func loadTLSConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+
+	// Load custom CA certificate if provided (for self-signed certs)
+	// If not provided, system CA pool is used
+	if caFile != "" {
+		caCert, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CA certificate: %w", err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return nil, fmt.Errorf("failed to parse CA certificate")
+		}
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	// Load client certificate and key if provided (for mutual TLS)
+	if certFile != "" && keyFile != "" {
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client certificate: %w", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	} else if certFile != "" || keyFile != "" {
+		return nil, fmt.Errorf("both certFile and keyFile must be provided together for client certificate authentication")
+	}
+
+	return tlsConfig, nil
 }
