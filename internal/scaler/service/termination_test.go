@@ -735,8 +735,7 @@ func TestTerminationService_TargetSizeLostDuringRequeue(t *testing.T) {
 	t.Logf("Actual revert capacity: %d, Expected: %d", actualRevertCapacity, expectedRevertCapacity)
 
 	assert.Equal(t, expectedRevertCapacity, actualRevertCapacity,
-		"BUG: TargetSize was lost during requeue, causing incorrect revert capacity. "+
-			"Expected %d but got %d", expectedRevertCapacity, actualRevertCapacity)
+		"Expected %d but got %d", expectedRevertCapacity, actualRevertCapacity)
 
 	mockController.AssertExpectations(t)
 	mockSQS.AssertExpectations(t)
