@@ -654,3 +654,90 @@ func TestTerminationService_RevertFailedScalingOperation(t *testing.T) {
 		})
 	}
 }
+
+func TestTerminationService_TargetSizeLostDuringRequeue(t *testing.T) {
+	mockASG := new(MockASGClient)
+	mockSQS := new(MockSQSClient)
+	mockEC2 := new(MockEC2Client)
+	mockController := new(MockControllerClient)
+
+	instanceCoord := &InstanceCoordinator{
+		cfg:       InstanceCoordinatorConfig{MinAllocationHours: defaultMinAllocationHours},
+		ec2Client: mockEC2,
+	}
+	nodeCoord := &NodeCoordinator{
+		controllerClient: mockController,
+	}
+
+	service := &TerminationService{
+		cfg: TerminationServiceConfig{
+			TerminationTimeoutMinutes: defaultTerminationTimeoutMinutes,
+			MaxTerminationRetries:     0,
+		},
+		asgClient:           mockASG,
+		sqsClient:           mockSQS,
+		instanceCoordinator: instanceCoord,
+		nodeCoordinator:     nodeCoord,
+	}
+
+	initialMsg := &ScalingOperation{
+		GroupName:  "my-asg",
+		TargetSize: 14,
+		NodesToTerminate: []Node{
+			{
+				ID:               utils.UID("node-1"),
+				InstanceID:       "i-111",
+				Hostname:         "host-1",
+				TerminationState: TerminationStateSelected,
+				ActiveRunners:    0,
+			},
+		},
+		Attempts: 0,
+	}
+
+	mockController.On("GetNodeInfo", mock.Anything, utils.UID("node-1")).Return(&types.Node{
+		ID:   utils.UID("node-1"),
+		Name: "host-1",
+		Status: types.Status{
+			Condition:   types.Condition{Status: types.Disabled},
+			Capacity:    types.Resources{Runners: utils.Int32String{IntVal: 10}},
+			Allocatable: types.Resources{Runners: utils.Int32String{IntVal: 8}},
+		},
+	}, nil).Once()
+
+	var requeuedMsg1 ScalingOperation
+	mockSQS.On("SendMessage", mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			body := args.Get(1).(string)
+			json.Unmarshal([]byte(body), &requeuedMsg1)
+		}).
+		Return(&sqsTypes.SendMessageOutput{MessageId: aws.String("msg-1")}, nil).Once()
+
+	err := service.ProcessNodeTermination(initialMsg)
+	require.NoError(t, err)
+
+	t.Logf("After attempt 1 - TargetSize in requeued message: %d (expected: 14)", requeuedMsg1.TargetSize)
+	t.Logf("After attempt 1 - Attempts in requeued message: %d (expected: 1)", requeuedMsg1.Attempts)
+
+	mockController.On("EnableNode", mock.Anything, utils.UID("node-1")).Return(nil).Once()
+
+	var actualRevertCapacity int
+	mockASG.On("SetCapacity", mock.Anything, "my-asg", mock.AnythingOfType("int")).
+		Run(func(args mock.Arguments) {
+			actualRevertCapacity = args.Get(2).(int)
+		}).
+		Return(nil).Once()
+
+	err = service.ProcessNodeTermination(&requeuedMsg1)
+	require.NoError(t, err)
+
+	expectedRevertCapacity := 15
+	t.Logf("Actual revert capacity: %d, Expected: %d", actualRevertCapacity, expectedRevertCapacity)
+
+	assert.Equal(t, expectedRevertCapacity, actualRevertCapacity,
+		"Expected %d but got %d", expectedRevertCapacity, actualRevertCapacity)
+
+	mockController.AssertExpectations(t)
+	mockSQS.AssertExpectations(t)
+	mockASG.AssertExpectations(t)
+}

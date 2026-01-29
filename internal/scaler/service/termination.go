@@ -141,7 +141,7 @@ func (t *TerminationService) ProcessNodeTermination(msg *ScalingOperation) error
 	// 4. Re-queue nodes that need retry
 	if len(nodesToRetry) > 0 {
 		logger.Infof("Re-queuing %d nodes for retry", len(nodesToRetry))
-		err := t.requeueNodesForRetry(ctx, msg.GroupName, nodesToRetry, msg.Attempts+1)
+		err := t.requeueNodesForRetry(ctx, msg.GroupName, nodesToRetry, msg.Attempts+1, msg.TargetSize)
 		if err != nil {
 			logger.Errorf("Failed to requeue nodes for retry: %v", err)
 			return err
@@ -157,12 +157,14 @@ func (t *TerminationService) requeueNodesForRetry(
 	groupName string,
 	nodes []Node,
 	attempts int,
+	targetSize int,
 ) error {
 
 	newMsg := ScalingOperation{
 		GroupName:        groupName,
 		NodesToTerminate: nodes,
 		Attempts:         attempts,
+		TargetSize:       targetSize,
 	}
 	message, err := json.Marshal(newMsg)
 	if err != nil {
