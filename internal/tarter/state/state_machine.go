@@ -37,7 +37,7 @@ const (
 
 // StateManager is a State Machine to manage runner states.
 type StateManager struct {
-	// runners contains all runners that are exist in the State Manager.
+	// runners contains all runners that exist in the State Manager.
 	runners map[utils.UID]*tt.RunnerState
 
 	// activeRunners contains all runners that are currently in running state.
@@ -76,7 +76,7 @@ func (sm *StateManager) AddRunner(runner tt.Runner) {
 		}
 	}
 
-	// TODO: Implement host node resource check before place new runner to avoid resource starvation
+	// TODO: Implement host node resource check before placing new runner to avoid resource starvation
 
 	if len(sm.activeRunners) >= sm.maxActiveRunners {
 		logger.Warnf("Maximum number of active runners reached, cannot add new runner")
@@ -103,8 +103,8 @@ func (sm *StateManager) AddRunner(runner tt.Runner) {
 	sm.eventBus.Publish(events.Event{Type: tt.EventRunnerCreated, Payload: &runner})
 }
 
-// GetRunnerState returns copy of RunnerState form it's state.
-// RunnerState should be read only for any other part of application to avoid accidental modifications
+// GetRunnerState returns copy of RunnerState from its state.
+// RunnerState should be read only for any other part of the application to avoid accidental modifications
 func (sm *StateManager) GetRunnerState(id utils.UID) (tt.RunnerState, bool) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()

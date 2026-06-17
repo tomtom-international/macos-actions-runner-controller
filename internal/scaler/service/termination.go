@@ -77,7 +77,7 @@ func (t *TerminationService) ProcessNodeTermination(msg *ScalingOperation) error
 
 	if msg.Attempts > t.cfg.MaxTerminationRetries {
 		logger.Warnf(
-			"Max retry count reached for termination nodes in node group %s. Nodes to terminate left: %v",
+			"Max retry count reached for terminating nodes in node group %s. Nodes to terminate left: %v",
 			msg.GroupName,
 			msg.NodesToTerminate,
 		)
@@ -93,12 +93,12 @@ func (t *TerminationService) ProcessNodeTermination(msg *ScalingOperation) error
 	var nodesToTerminate []Node
 	var nodesToRetry []Node
 
-	// 1. Try disable node via controller API
+	// 1. Try disabling node via controller API
 	for _, node := range msg.NodesToTerminate {
 		logger.Infof("Preparing %s node for termination...", node.Hostname)
 		err := t.nodeCoordinator.PrepareNodeForTermination(ctx, &node)
 		if err != nil {
-			logger.Warnf("Failed preparing node node %s for termination: %v", node.ID, err)
+			logger.Warnf("Failed preparing node %s for termination: %v", node.ID, err)
 			nodesToRetry = append(nodesToRetry, node)
 			continue
 		}
@@ -116,7 +116,7 @@ func (t *TerminationService) ProcessNodeTermination(msg *ScalingOperation) error
 		for _, node := range nodesToTerminate {
 			// 2. Terminate instances
 			if node.TerminationState == TerminationStateReadyToTerminate {
-				logger.Infof("Terminating node %s with instance id %s", node.Hostname, node.InstanceID)
+				logger.Infof("Terminating node %s with instance ID %s", node.Hostname, node.InstanceID)
 				err := t.instanceCoordinator.TerminateInstance(ctx, node.InstanceID)
 				if err != nil {
 					logger.Warnf("Failed to terminate instance %s: %v", node.InstanceID, err)
@@ -128,7 +128,7 @@ func (t *TerminationService) ProcessNodeTermination(msg *ScalingOperation) error
 			}
 
 			// 3. Deregister node from controller
-			logger.Infof("Deregistering node %s with instance id %s", node.Hostname, node.InstanceID)
+			logger.Infof("Deregistering node %s with instance ID %s", node.Hostname, node.InstanceID)
 			err := t.nodeCoordinator.DeregisterNode(ctx, node.ID)
 			if err != nil {
 				logger.Warnf("Failed to deregister node %s: %v", node.ID, err)
@@ -173,7 +173,7 @@ func (t *TerminationService) requeueNodesForRetry(
 	}
 	_, err = t.sqsClient.SendMessage(ctx, string(message))
 	if err != nil {
-		logger.Errorf("Failed to re-queue message to sqs: %v", err)
+		logger.Errorf("Failed to re-queue message to SQS: %v", err)
 		return err
 	}
 	return nil
@@ -185,7 +185,7 @@ func (t *TerminationService) revertFailedScalingOperation(
 	targetSize int,
 	failedNodes []Node,
 ) {
-	// revert nodes to active statue to prevent zombie nodes
+	// revert nodes to active state to prevent zombie nodes
 	for _, node := range failedNodes {
 		// Re-enable disabled nodes
 		if node.TerminationState != TerminationStateSelected {
@@ -196,7 +196,7 @@ func (t *TerminationService) revertFailedScalingOperation(
 			}
 		}
 	}
-	// Scale AGS to include failed nodes
+	// Scale ASG to include failed nodes
 	revertCapacity := targetSize + len(failedNodes)
 	logger.Infof("Reverting ASG capacity to %d", revertCapacity)
 	err := t.asgClient.SetCapacity(ctx, groupName, revertCapacity)

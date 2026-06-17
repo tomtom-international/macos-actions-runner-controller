@@ -39,7 +39,7 @@ import (
 
 const (
 	heartbeatInterval = 15 * time.Second
-	// nodeStatusUpdateRetry specifies how many times Tarter retries when sending heartbeat with node status failed.
+	// nodeStatusUpdateRetry specifies how many times Tarter retries when sending a heartbeat with node status update fails.
 	nodeStatusUpdateRetry = 3
 )
 
@@ -54,7 +54,7 @@ type Tarter struct {
 	tartClient *tart.Client
 	// maintain running processes
 	runnerManager *runner.RunnerManager
-	// TODO: Allow to communicate with StateManager only for Tarter
+	// TODO: Allow communicating with StateManager only for Tarter
 	// Runners State Machine which store runners state
 	StateManager *state.StateManager
 	// event bus
@@ -81,7 +81,7 @@ func NewTarter(tarterConfig *config.TarterConfig,
 	ghConfig := config.GetGithubClientConfig(tarterConfig)
 	githubClient, err := ghclient.New(ghConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initiate GitHub client, %v", err.Error())
+		return nil, fmt.Errorf("failed to initialize GitHub client, %v", err.Error())
 	}
 
 	tartClient := tart.NewClient(
@@ -127,13 +127,13 @@ func (t *Tarter) startEventHandling(eventHandlers map[string]func(event events.E
 
 func (t *Tarter) handleRunnerCreated(event events.Event) {
 	r := event.Payload.(*tt.Runner)
-	logger.Debugf("Tarter handling runner <create> event for runner id: %s", r.ID)
+	logger.Debugf("Tarter handling runner <create> event for runner ID: %s", r.ID)
 	t.runnerManager.StartRunnerWorker(r)
 }
 
 func (t *Tarter) handleRunnerStopping(event events.Event) {
 	r := event.Payload.(*tt.Runner)
-	logger.Debugf("Tarter handling runner <stopping> event for runner id: %s", r.ID)
+	logger.Debugf("Tarter handling runner <stopping> event for runner ID: %s", r.ID)
 	t.runnerManager.StopRunnerWorker(r.ID)
 }
 
@@ -163,7 +163,7 @@ func (t *Tarter) restartRunner(runnerName string) {
 	for _, runnerConfig := range t.config.GetRunnersConfig() {
 		if runnerConfig.Name == runnerName && runnerConfig.RestartOnFailure {
 			logger.Infof("Restarting %v ...", runnerName)
-			// Sleep for 15 seconds before restarting the runner to avoid tart cli failures
+			// Sleep for 15 seconds before restarting the runner to avoid Tart CLI failures
 			time.Sleep(15 * time.Second)
 			t.StateManager.AddRunner(tt.Runner{Config: runnerConfig})
 		}

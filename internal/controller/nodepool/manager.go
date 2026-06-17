@@ -89,7 +89,7 @@ func (m *Manager) AddNodeHeartbeatWatcher(nodeID utils.UID) {
 	watcher := newHeartbeatWatcher(nodeID, m.etcdClient, m)
 
 	if _, ok := m.heartbeatWatchers[nodeID]; ok {
-		logger.Warnf("Heardbeat watcher for node %s already exists", nodeID)
+		logger.Warnf("Heartbeat watcher for node %s already exists", nodeID)
 		return
 	}
 
