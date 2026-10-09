@@ -36,6 +36,7 @@ const (
 type heartbeatWatcher struct {
 	ctx         context.Context
 	etcdClient  *etcd.Client
+	watch       func(ctx context.Context, key string) clientv3.WatchChan
 	ctxCancel   context.CancelFunc
 	nodeManager *Manager
 	nodeID      utils.UID
@@ -56,6 +57,7 @@ func newHeartbeatWatcher(
 		nodeID:      nodeID,
 		watchKey:    key,
 		etcdClient:  etcdClient,
+		watch:       etcdClient.Watch,
 		ctx:         ctx,
 		ctxCancel:   cancel,
 		nodeManager: nodeManager,
@@ -75,8 +77,12 @@ func (w *heartbeatWatcher) run() {
 	w.pause = false
 
 	for {
-		watchChan := w.etcdClient.Watch(w.ctx, w.watchKey)
+		watchChan := w.watch(w.ctx, w.watchKey)
 
+		// A bare `break` inside a select only leaves the select. Without the
+		// label, a closed or failed watch kept reading from the same closed
+		// channel and the watch was never re-created.
+	recv:
 		for {
 			select {
 			case <-w.ctx.Done():
@@ -84,13 +90,12 @@ func (w *heartbeatWatcher) run() {
 			case watchResp, ok := <-watchChan:
 				if !ok {
 					logger.Errorf("Watch channel closed for key %s, attempting to reconnect", w.watchKey)
-					time.Sleep(time.Second)
-					break
+					break recv
 				}
 
 				if watchResp.Err() != nil {
 					logger.Errorf("Watch error for key %s: %v", w.watchKey, watchResp.Err())
-					break
+					break recv
 				}
 				for _, ev := range watchResp.Events {
 					if ev.Type == clientv3.EventTypePut {
@@ -138,6 +143,14 @@ func (w *heartbeatWatcher) run() {
 					w.pause = true
 				}
 			}
+		}
+
+		// Back off before re-creating the watch, so a watch that keeps
+		// failing does not turn into a busy loop.
+		select {
+		case <-w.ctx.Done():
+			return
+		case <-time.After(time.Second):
 		}
 	}
 }
