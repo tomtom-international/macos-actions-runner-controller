@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Compute the next version and stop without building or releasing
+        type: boolean
+        default: false
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_REPO: ghcr.io/${{ github.repository }}
+
+jobs:
+  bump:
+    name: Compute version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bump.outputs.next-version }}
+    steps:
+      - name: Guard the ref
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo "::error::Release runs on main only (got ${GITHUB_REF})."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Compute the next version
+        id: bump
+        uses: tomtom-international/commisery-action/bump@fb3f6c52295f5f46634ab749d9e3d90582a7271d # v8.0.2
+        with:
+          token: ${{ github.token }}
+          config: .commisery.yml
+          version-prefix: ""
+          create-release: false
+          create-tag: false
+
+      - name: Report the job summary
+        env:
+          NEXT: ${{ steps.bump.outputs.next-version }}
+          CURRENT: ${{ steps.bump.outputs.current-version }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Release"
+            echo ""
+            if [ -z "${NEXT:-}" ]; then
+              echo "No release: nothing since ${CURRENT:-the last tag} bumps the version."
+            elif [ "$DRY_RUN" = 'true' ]; then
+              echo "Dry run: would release **${NEXT}** (from ${CURRENT:-no previous tag})."
+            else
+              echo "Releasing **${NEXT}** (from ${CURRENT:-no previous tag})."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "${NEXT:-}" ]; then
+            echo "::notice::No release: nothing since ${CURRENT:-the last tag} bumps the version."
+          else
+            echo "::notice::Next version is ${NEXT} (from ${CURRENT:-no previous tag})."
+          fi
+
+  verify:
+    name: Verify
+    needs: bump
+    if: needs.bump.outputs.tag != '' && !inputs.dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          go fmt ./...
+          git diff --exit-code
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.11.4
+
+      - name: Test
+        run: go test ./...
+
+  binaries:
+    name: Build binaries
+    needs: [bump, verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Build release artifacts
+        env:
+          VERSION: ${{ needs.bump.outputs.tag }}
+        run: make release VERSION="$VERSION"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-artifacts
+          path: release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  images:
+    name: Build and push images
+    needs: [bump, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push
+        env:
+          VERSION: ${{ needs.bump.outputs.tag }}
+        run: make docker VERSION="$VERSION" IMAGE_REPO="$IMAGE_REPO"
+
+  release:
+    name: Create release
+    needs: [bump, binaries, images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-artifacts
+          path: release
+
+      - name: Create tag and release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ needs.bump.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release/*
+
+      - name: Report the job summary
+        env:
+          VERSION: ${{ needs.bump.outputs.tag }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Published"
+            echo ""
+            echo "- Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${VERSION}"
+            echo "- Images:"
+            for app in controller hook scaler; do
+              echo "  - \`${IMAGE_REPO}/${app}:${VERSION}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
