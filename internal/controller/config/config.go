@@ -25,17 +25,11 @@ type ControllerConfig struct {
 	// for serving on all interfaces)
 	Address string `env:"ADDRESS" envDefault:"0.0.0.0"`
 	// port is the port for the Controller to serve on.
-	Port                   string   `env:"PORT" envDefault:"8043"`
-	AwsRegion              string   `env:"AWS_REGION" envDefault:"eu-west-1"`
-	AwsRunnerRequestSQSUrl string   `env:"AWS_RUNNER_REQUEST_SQS_URL"`
-	CORSAllowedOrigins     string   `env:"CORS_ALLOWED_ORIGINS" envDefault:"*"`
-	EtcdEndpoints          []string `env:"ETCD_ENDPOINTS" envDefault:"http://localhost:2379,"`
-	// EtcdNodeDeregisterLease is the lease time in seconds for the node deregister
-	EtcdNodeDeregisterLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"3600"`
-	// EtcdRunnerFinishedLease is the lease time in seconds for the runner finished
-	EtcdRunnerFinishedLease int `env:"ETCD_RUNNER_FINISHED_LEASE" envDefault:"172800"`
+	Port                   string `env:"PORT" envDefault:"8043"`
+	AwsRegion              string `env:"AWS_REGION" envDefault:"eu-west-1"`
+	AwsRunnerRequestSQSUrl string `env:"AWS_RUNNER_REQUEST_SQS_URL"`
+	CORSAllowedOrigins     string `env:"CORS_ALLOWED_ORIGINS" envDefault:"*"`
 
-	EtcdTLSEnabled  bool   `env:"ETCD_TLS_ENABLED" envDefault:"false"`
 	EtcdTLSCertFile string `env:"ETCD_TLS_CERT_FILE"`
 	EtcdTLSKeyFile  string `env:"ETCD_TLS_KEY_FILE"`
 	EtcdTLSCAFile   string `env:"ETCD_TLS_CA_FILE"`
@@ -43,10 +37,17 @@ type ControllerConfig struct {
 	EtcdUsername string `env:"ETCD_USERNAME"`
 	EtcdPassword string `env:"ETCD_PASSWORD"`
 
-	LogDebug      bool `env:"LOG_DEBUG" envDefault:"false"`
-	LogCaller     bool `env:"LOG_CALLER" envDefault:"false"`
-	LogStacktrace bool `env:"LOG_STACKTRACE" envDefault:"false"`
-	LogJSON       bool `env:"LOG_JSON" envDefault:"false"`
+	EtcdEndpoints []string `env:"ETCD_ENDPOINTS" envDefault:"http://localhost:2379,"`
+	// EtcdNodeDeregisterLease is the lease time in seconds for the node deregister
+	EtcdNodeDeregisterLease int `env:"ETCD_NODE_POOL_DEREGISTER_LEASE" envDefault:"3600"`
+	// EtcdRunnerFinishedLease is the lease time in seconds for the runner finished
+	EtcdRunnerFinishedLease int `env:"ETCD_RUNNER_FINISHED_LEASE" envDefault:"172800"`
+
+	EtcdTLSEnabled bool `env:"ETCD_TLS_ENABLED" envDefault:"false"`
+	LogDebug       bool `env:"LOG_DEBUG" envDefault:"false"`
+	LogCaller      bool `env:"LOG_CALLER" envDefault:"false"`
+	LogStacktrace  bool `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogJSON        bool `env:"LOG_JSON" envDefault:"false"`
 }
 
 func LoadConfiguration(c *ControllerConfig) error {

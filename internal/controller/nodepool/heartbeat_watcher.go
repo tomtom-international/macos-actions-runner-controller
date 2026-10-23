@@ -50,7 +50,8 @@ func newHeartbeatWatcher(
 	nodeManager *Manager,
 ) *heartbeatWatcher {
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// The cancel func is kept in ctxCancel and called when run() returns.
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is stored in ctxCancel
 	key := path.Join("/", nodeManager.etcdKeyPrefix, string(nodeID))
 
 	return &heartbeatWatcher{

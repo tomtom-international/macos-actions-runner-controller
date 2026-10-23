@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -47,7 +48,7 @@ func (m *MockActionHandler) Handle(ctx context.Context, target ScalingTarget) er
 
 	args := m.Called(ctx, target)
 
-	key := target.ScalingGroupName + "-" + string(rune(target.DesiredCapacity))
+	key := fmt.Sprintf("%s-%d", target.ScalingGroupName, target.DesiredCapacity)
 	m.executions[key]++
 
 	return args.Error(0)
@@ -57,7 +58,7 @@ func (m *MockActionHandler) GetExecutionCount(scalingGroupName string, desiredCa
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	key := scalingGroupName + "-" + string(rune(desiredCapacity))
+	key := fmt.Sprintf("%s-%d", scalingGroupName, desiredCapacity)
 	return m.executions[key]
 }
 
@@ -111,14 +112,13 @@ func TestGetSchedules(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Get schedules
+	// Get schedules. GetSchedules iterates a map, so sort before asserting on positions.
 	schedules := scheduler.GetSchedules()
+	sort.Slice(schedules, func(i, j int) bool { return schedules[i].Name < schedules[j].Name })
 
 	assert.Len(t, schedules, 2)
-	assert.ElementsMatch(t, []string{"schedule-0", "schedule-1"}, []string{
-		schedules[0].Name,
-		schedules[1].Name,
-	})
+	assert.Equal(t, "schedule-0", schedules[0].Name)
+	assert.Equal(t, "schedule-1", schedules[1].Name)
 	assert.Equal(t, "group-1", schedules[0].Target.ScalingGroupName)
 	assert.Equal(t, "group-2", schedules[1].Target.ScalingGroupName)
 	assert.Equal(t, 5, schedules[0].Target.DesiredCapacity)

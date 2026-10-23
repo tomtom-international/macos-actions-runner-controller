@@ -72,6 +72,10 @@ linters:
         text: G101
       - linters:
           - gosec
+        path: pkg/clients/github/client_test.go
+        text: G704
+      - linters:
+          - gosec
         path: cmd/scaler/app/server_test.go
         text: G306
       - linters:
@@ -94,15 +98,11 @@ linters:
         path: internal/scaler/api/server.go
         text: SA4006
       - linters:
-          - gocritic
-        path: pkg/tarter/runner/worker.go
-        text: ifElseChain
+          - dupl
+        path: internal/controller/server/nodepool_handler.go
       - linters:
           - dupl
-        path: pkg/controller/server/nodepool_handler.go
-      - linters:
-          - dupl
-        path: pkg/controller/server/runners_handler.go
+        path: internal/controller/server/runners_handler.go
       - linters:
           - govet
         path: internal/scaler/api/server_test.go

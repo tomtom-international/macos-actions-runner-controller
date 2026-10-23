@@ -17,6 +17,7 @@
 package metrics_aggregator
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -109,7 +110,7 @@ func TestCacheConcurrency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			for j := 0; j < 10; j++ {
-				key := string('a'+byte(id)) + string('0'+byte(j))
+				key := fmt.Sprintf("%d-%d", id, j)
 				cache.Set(key, key)
 			}
 			done <- true
@@ -125,7 +126,7 @@ func TestCacheConcurrency(t *testing.T) {
 	count := 0
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			key := string('a'+byte(i)) + string('0'+byte(j))
+			key := fmt.Sprintf("%d-%d", i, j)
 			if val, exists := cache.Get(key); exists && val == key {
 				count++
 			}
