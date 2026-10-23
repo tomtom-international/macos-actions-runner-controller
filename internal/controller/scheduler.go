@@ -60,7 +60,7 @@ func (s *Scheduler) startScheduler(ctx context.Context) {
 }
 
 // TODO: Explain why 2 pending runners scheduling
-// TODO: Handle race condition on controller replications
+// Only the replica holding the scheduler leadership runs this (see runAsLeader).
 func (s *Scheduler) schedule() {
 	nodes := s.getNodeList()
 	if len(nodes) == 0 {
