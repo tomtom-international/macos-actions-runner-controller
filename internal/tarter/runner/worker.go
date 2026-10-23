@@ -194,14 +194,15 @@ func (w *worker) watch() {
 	select {
 	case err := <-doneChan:
 		if runnerState, exist := w.runnerManager.stateManager.GetRunnerState(w.runner.ID); exist {
-			if runnerState.Status == t.Stopping {
+			switch {
+			case runnerState.Status == t.Stopping:
 				logger.Infof("Runner %s is stopped", w.runner.ID)
 				w.runnerManager.stateManager.UpdateRunnerStatus(w.runner.ID, t.Stopped)
-			} else if err != nil {
+			case err != nil:
 				logger.Errorf("Runner finished with error: %v, output: %v", err, w.stderr.String())
 				w.runnerManager.stateManager.UpdateRunnerStatus(w.runner.ID, t.Failed,
 					fmt.Sprintf("runner finished with error: %v, output: %v", err, w.stderr.String()))
-			} else {
+			default:
 				logger.Infof("Runner %s finished", w.runner.ID)
 				w.runnerManager.stateManager.UpdateRunnerStatus(w.runner.ID, t.Finished)
 			}

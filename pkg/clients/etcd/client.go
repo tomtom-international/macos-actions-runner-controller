@@ -30,16 +30,16 @@ import (
 const defaultRequestTimeout = 5
 
 type ClientConfig struct {
-	Endpoints      []string
-	RequestTimeout int // in seconds
-
-	TLSEnabled  bool
 	TLSCertFile string // Path to client certificate
 	TLSKeyFile  string // Path to client key
 	TLSCAFile   string // Path to CA certificate
 
 	Username string
 	Password string
+
+	Endpoints      []string
+	RequestTimeout int // in seconds
+	TLSEnabled     bool
 }
 
 type Client struct {

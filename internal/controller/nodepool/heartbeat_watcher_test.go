@@ -31,7 +31,7 @@ import (
 // Once the streams run out, Watch returns a channel that never yields.
 func newTestWatcher(streams ...func() clientv3.WatchChan) (*heartbeatWatcher, *int32) {
 	var calls int32
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is stored in ctxCancel
 	w := &heartbeatWatcher{
 		ctx:         ctx,
 		ctxCancel:   cancel,

@@ -32,17 +32,14 @@ type Config struct {
 }
 
 type ScalerConfig struct {
-	MacosRunnerControllerURL        string   `env:"MACOS_RUNNER_CONTROLLER_URL"`
-	MacosRunnerControllerAPIVersion string   `env:"MACOS_RUNNER_CONTROLLER_API_VERSION" envDefault:"/api/v1"`
-	Port                            string   `env:"PORT" envDefault:"8045"`
-	ConfigPath                      string   `env:"CONFIG_PATH"`
-	AwsRegion                       string   `env:"AWS_REGION" envDefault:"eu-west-1"`
-	ScalerSqsQueueURL               string   `env:"AWS_SCALER_SQS_QUEUE_URL"`
-	Address                         string   `env:"ADDRESS" envDefault:"0.0.0.0"`
-	EtcdEndpoints                   []string `env:"ETCD_ENDPOINTS" envDefault:"http://localhost:2379,"`
-	MaxTerminationRetryCount        int      `env:"MAX_TERMINATION_RETRY_COUNT" envDefault:"12"`
+	MacosRunnerControllerURL        string `env:"MACOS_RUNNER_CONTROLLER_URL"`
+	MacosRunnerControllerAPIVersion string `env:"MACOS_RUNNER_CONTROLLER_API_VERSION" envDefault:"/api/v1"`
+	Port                            string `env:"PORT" envDefault:"8045"`
+	ConfigPath                      string `env:"CONFIG_PATH"`
+	AwsRegion                       string `env:"AWS_REGION" envDefault:"eu-west-1"`
+	ScalerSqsQueueURL               string `env:"AWS_SCALER_SQS_QUEUE_URL"`
+	Address                         string `env:"ADDRESS" envDefault:"0.0.0.0"`
 
-	EtcdTLSEnabled  bool   `env:"ETCD_TLS_ENABLED" envDefault:"false"`
 	EtcdTLSCertFile string `env:"ETCD_TLS_CERT_FILE"`
 	EtcdTLSKeyFile  string `env:"ETCD_TLS_KEY_FILE"`
 	EtcdTLSCAFile   string `env:"ETCD_TLS_CA_FILE"`
@@ -50,9 +47,13 @@ type ScalerConfig struct {
 	EtcdUsername string `env:"ETCD_USERNAME"`
 	EtcdPassword string `env:"ETCD_PASSWORD"`
 
-	LogJSON       bool `env:"LOG_JSON" envDefault:"false"`
-	LogCaller     bool `env:"LOG_CALLER" envDefault:"false"`
-	LogStacktrace bool `env:"LOG_STACKTRACE" envDefault:"false"`
-	LogDebug      bool `env:"LOG_DEBUG" envDefault:"false"`
-	DryRun        bool `env:"SCALER_DRY_RUN" envDefault:"false"`
+	EtcdEndpoints            []string `env:"ETCD_ENDPOINTS" envDefault:"http://localhost:2379,"`
+	MaxTerminationRetryCount int      `env:"MAX_TERMINATION_RETRY_COUNT" envDefault:"12"`
+
+	EtcdTLSEnabled bool `env:"ETCD_TLS_ENABLED" envDefault:"false"`
+	LogJSON        bool `env:"LOG_JSON" envDefault:"false"`
+	LogCaller      bool `env:"LOG_CALLER" envDefault:"false"`
+	LogStacktrace  bool `env:"LOG_STACKTRACE" envDefault:"false"`
+	LogDebug       bool `env:"LOG_DEBUG" envDefault:"false"`
+	DryRun         bool `env:"SCALER_DRY_RUN" envDefault:"false"`
 }
