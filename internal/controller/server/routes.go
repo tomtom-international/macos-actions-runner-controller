@@ -17,30 +17,32 @@
 package server
 
 import (
-	"github.com/gorilla/mux"
+	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 )
 
-func SetupAuditRoutes(r *mux.Router) {
-	r.HandleFunc("/health", HealthCheckHandler()).Methods("GET")
+func SetupAuditRoutes(r *core.Router) {
+	r.HandleFunc("GET /api/v1/health", HealthCheckHandler())
 }
 
-func SetupNodePoolRoutes(r *mux.Router, c ControllerInterface, origins string) {
-	r.HandleFunc("/nodes", GetNodeListHandler(c, origins)).Methods("GET", "OPTIONS")
-	r.HandleFunc("/nodes/register", RegisterNodeHandler(c)).Methods("POST")
-	r.HandleFunc("/nodes/{node_uid}", GetNodeHandler(c)).Methods("GET")
-	r.HandleFunc("/nodes/{node_uid}/status", NodeHeartbeatHandler(c)).Methods("PUT")
-	r.HandleFunc("/nodes/{node_uid}/deregister", UpdateNodeStatusHandler(c, types.Deregistered)).Methods("PUT")
-	r.HandleFunc("/nodes/{node_uid}/enable", UpdateNodeStatusHandler(c, types.NotReady)).Methods("PUT")
-	r.HandleFunc("/nodes/{node_uid}/disable", UpdateNodeStatusHandler(c, types.Disabled)).Methods("PUT")
+func SetupNodePoolRoutes(r *core.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("GET /api/v1/nodes", GetNodeListHandler(c, origins))
+	r.HandleFunc("OPTIONS /api/v1/nodes", GetNodeListHandler(c, origins))
+	r.HandleFunc("POST /api/v1/nodes/register", RegisterNodeHandler(c))
+	r.HandleFunc("GET /api/v1/nodes/{node_uid}", GetNodeHandler(c))
+	r.HandleFunc("PUT /api/v1/nodes/{node_uid}/status", NodeHeartbeatHandler(c))
+	r.HandleFunc("PUT /api/v1/nodes/{node_uid}/deregister", UpdateNodeStatusHandler(c, types.Deregistered))
+	r.HandleFunc("PUT /api/v1/nodes/{node_uid}/enable", UpdateNodeStatusHandler(c, types.NotReady))
+	r.HandleFunc("PUT /api/v1/nodes/{node_uid}/disable", UpdateNodeStatusHandler(c, types.Disabled))
 }
 
-func SetupRunnersRoutes(r *mux.Router, c ControllerInterface, origins string) {
-	r.HandleFunc("/runners", GetRunnerListHandler(c, origins)).Methods("GET", "OPTIONS")
-	r.HandleFunc("/runners/{runner_uid}", GetRunnerHandler(c)).Methods("GET")
-	r.HandleFunc("/runners/{runner_uid}/status", GetRunnerStatusUpdateHandler(c)).Methods("PUT")
+func SetupRunnersRoutes(r *core.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("GET /api/v1/runners", GetRunnerListHandler(c, origins))
+	r.HandleFunc("OPTIONS /api/v1/runners", GetRunnerListHandler(c, origins))
+	r.HandleFunc("GET /api/v1/runners/{runner_uid}", GetRunnerHandler(c))
+	r.HandleFunc("PUT /api/v1/runners/{runner_uid}/status", GetRunnerStatusUpdateHandler(c))
 }
 
-func SetupWatcherRoutes(r *mux.Router, c ControllerInterface, origins string) {
-	r.HandleFunc("/ws/watch", WatcherHandler(c, origins)).Methods("GET")
+func SetupWatcherRoutes(r *core.Router, c ControllerInterface, origins string) {
+	r.HandleFunc("GET /ws/watch", WatcherHandler(c, origins))
 }

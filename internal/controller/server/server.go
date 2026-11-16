@@ -24,7 +24,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
@@ -51,15 +50,11 @@ type ControllerInterface interface {
 }
 
 func NewServer(controller ControllerInterface, origins string) http.Handler {
-	r := mux.NewRouter()
-	core.SetupGenericHandlers(r)
-	s := r.PathPrefix("/api/v1").Subrouter()
-	SetupAuditRoutes(s)
-	SetupNodePoolRoutes(s, controller, origins)
+	r := core.NewRouter()
+	SetupAuditRoutes(r)
+	SetupNodePoolRoutes(r, controller, origins)
 	SetupWatcherRoutes(r, controller, origins)
-	SetupRunnersRoutes(s, controller, origins)
-	// TODO refactor cors middleware
-	r.Use(mux.CORSMethodMiddleware(r))
+	SetupRunnersRoutes(r, controller, origins)
 	return r
 }
 

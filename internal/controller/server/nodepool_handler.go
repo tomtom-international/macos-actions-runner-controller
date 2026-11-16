@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -126,8 +125,7 @@ func GetNodeHandler(c ControllerInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		vars := mux.Vars(r)
-		nodeID := utils.UID(vars["node_uid"])
+		nodeID := utils.UID(r.PathValue("node_uid"))
 		if nodeID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{
@@ -185,8 +183,7 @@ func NodeHeartbeatHandler(c ControllerInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		vars := mux.Vars(r)
-		nodeID := utils.UID(vars["node_uid"])
+		nodeID := utils.UID(r.PathValue("node_uid"))
 		if nodeID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{
@@ -263,8 +260,7 @@ func UpdateNodeStatusHandler(c ControllerInterface, nodeStatus types.NodeStatus)
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		vars := mux.Vars(r)
-		nodeID := utils.UID(vars["node_uid"])
+		nodeID := utils.UID(r.PathValue("node_uid"))
 		if nodeID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{

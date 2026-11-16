@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -66,8 +65,7 @@ func GetRunnerListHandler(c ControllerInterface, origins string) http.HandlerFun
 func GetRunnerHandler(c ControllerInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		runnerID := utils.UID(vars["runner_uid"])
+		runnerID := utils.UID(r.PathValue("runner_uid"))
 		if runnerID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{
@@ -124,8 +122,7 @@ func GetRunnerHandler(c ControllerInterface) http.HandlerFunc {
 func GetRunnerStatusUpdateHandler(c ControllerInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		runnerID := utils.UID(vars["runner_uid"])
+		runnerID := utils.UID(r.PathValue("runner_uid"))
 		if runnerID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{
