@@ -19,43 +19,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
-
-func MethodNotAllowedHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		response := SimpleResponse{
-			Status:  http.StatusMethodNotAllowed,
-			Message: "The method not allowed.",
-		}
-
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		err := json.NewEncoder(w).Encode(response)
-		if err != nil {
-			return
-		}
-	}
-}
-
-func NotFoundHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		response := SimpleResponse{
-			Status:  http.StatusNotFound,
-			Message: "Page not found.",
-		}
-
-		w.WriteHeader(http.StatusNotFound)
-		err := json.NewEncoder(w).Encode(response)
-		if err != nil {
-			return
-		}
-	}
-}
 
 func SimpleHealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -70,11 +34,4 @@ func SimpleHealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-}
-
-func SetupGenericHandlers(r *mux.Router) {
-	// Define a custom handler for unsupported methods
-	r.MethodNotAllowedHandler = MethodNotAllowedHandler()
-	// Define a custom handler for 404 responses
-	r.NotFoundHandler = NotFoundHandler()
 }

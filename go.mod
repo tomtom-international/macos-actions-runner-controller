@@ -14,7 +14,6 @@ require (
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/google/go-github/v61 v61.0.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
