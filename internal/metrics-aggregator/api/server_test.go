@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -110,4 +111,27 @@ func TestSetupRoutes(t *testing.T) {
 
 	assert.NotNil(t, metricsHandler)
 	assert.NotNil(t, healthHandler)
+}
+
+func TestServerConfig(t *testing.T) {
+	server := NewServer(new(MockMetricsAggregatorService), net.ParseIP("127.0.0.1"), "8047")
+
+	assert.Equal(t, "127.0.0.1:8047", server.server.Addr)
+	assert.Equal(t, 120*time.Second, server.server.ReadTimeout)
+	assert.Equal(t, 60*time.Second, server.server.WriteTimeout)
+	assert.Equal(t, 120*time.Second, server.server.IdleTimeout)
+	assert.Equal(t, 1<<20, server.server.MaxHeaderBytes)
+	assert.Zero(t, server.server.ReadHeaderTimeout)
+}
+
+func TestHealthThroughServerHandler(t *testing.T) {
+	server := NewServer(new(MockMetricsAggregatorService), net.ParseIP("127.0.0.1"), "8047")
+
+	w := httptest.NewRecorder()
+	server.server.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health", http.NoBody))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response core.SimpleResponse
+	assert.NoError(t, json.NewDecoder(w.Body).Decode(&response))
+	assert.Equal(t, core.SimpleResponse{Status: http.StatusOK, Message: "Healthy"}, response)
 }

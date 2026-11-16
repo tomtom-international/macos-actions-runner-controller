@@ -328,3 +328,14 @@ func TestSetupRoutes(t *testing.T) {
 		resp.Body.Close()
 	})
 }
+
+func TestServerConfig(t *testing.T) {
+	server := NewServer(new(MockForecastService), net.ParseIP("127.0.0.1"), "8045")
+
+	assert.Equal(t, "127.0.0.1:8045", server.server.Addr)
+	assert.Equal(t, 120*time.Second, server.server.ReadTimeout)
+	assert.Equal(t, 60*time.Second, server.server.WriteTimeout)
+	assert.Equal(t, 120*time.Second, server.server.IdleTimeout)
+	assert.Equal(t, 1<<20, server.server.MaxHeaderBytes)
+	assert.Zero(t, server.server.ReadHeaderTimeout)
+}
