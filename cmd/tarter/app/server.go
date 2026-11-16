@@ -146,15 +146,16 @@ func Run(r *mux.Router, t *tarter.Tarter) error {
 		t.StartManagedTarter()
 	}
 
-	// Create a server with timeouts
-	srv := &http.Server{
-		Addr:           fmt.Sprintf(":%s", tarterConfig.Port),
-		Handler:        r,
+	return newHTTPServer(tarterConfig.Port, r).ListenAndServe()
+}
+
+func newHTTPServer(port string, h http.Handler) *http.Server {
+	return &http.Server{
+		Addr:           fmt.Sprintf(":%s", port),
+		Handler:        h,
 		ReadTimeout:    15 * time.Second,
 		WriteTimeout:   15 * time.Second,
 		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-
-	return srv.ListenAndServe()
 }

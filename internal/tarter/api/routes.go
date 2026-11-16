@@ -18,23 +18,21 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api/handlers"
-	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/state"
 )
 
-func SetupRoutes(r *mux.Router, sm *state.StateManager) {
+func SetupRoutes(r *mux.Router, sm handlers.RunnerStore) {
 	r.HandleFunc("/runners", handlers.ListRunnersHandler(sm)).Methods("GET")
 	r.HandleFunc("/runners/{id}", handlers.GetRunnerHandler(sm)).Methods("GET")
 	r.HandleFunc("/runners/{id}/stop", handlers.StopRunnerHandler(sm)).Methods("PUT")
 }
 
-func SetupSysRoutes(r *mux.Router, t *tarter.Tarter) {
+func SetupSysRoutes(r *mux.Router, t handlers.Workers) {
 	r.HandleFunc("/sys/workers", handlers.ListRunnerWorkersHandler(t)).Methods("GET")
 	r.HandleFunc("/sys/workers-count", handlers.GetRunnerWorkersCountHandler(t)).Methods("GET")
 }
 
-func SetupStandaloneTarterRoutes(r *mux.Router, t *tarter.Tarter) {
+func SetupStandaloneTarterRoutes(r *mux.Router, t handlers.Standalone) {
 	r.HandleFunc("/sys/standalone/config", handlers.GetStandaloneConfigHandler(t)).Methods("GET")
 	r.HandleFunc("/sys/standalone/restart", handlers.RestartStandaloneRunnersHandler(t)).Methods("PUT")
 }

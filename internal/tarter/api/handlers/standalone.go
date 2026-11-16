@@ -21,11 +21,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
+	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/config"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 )
 
-func GetStandaloneConfigHandler(t *tarter.Tarter) http.HandlerFunc {
+type Standalone interface {
+	GetStandaloneConfig() config.Config
+	RestartStandaloneRunners()
+}
+
+func GetStandaloneConfigHandler(t Standalone) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp, err := json.Marshal(t.GetStandaloneConfig())
@@ -49,7 +54,7 @@ func GetStandaloneConfigHandler(t *tarter.Tarter) http.HandlerFunc {
 	}
 }
 
-func RestartStandaloneRunnersHandler(t *tarter.Tarter) http.HandlerFunc {
+func RestartStandaloneRunnersHandler(t Standalone) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		t.RestartStandaloneRunners()

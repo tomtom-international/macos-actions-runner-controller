@@ -21,11 +21,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 )
 
-func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
+type Workers interface {
+	GetWorkersCount() int
+	ListRunnerWorkers() []string
+}
+
+func ListRunnerWorkersHandler(t Workers) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		workers := t.ListRunnerWorkers()
 		w.Header().Set("Content-Type", "application/json")
@@ -49,7 +53,7 @@ func ListRunnerWorkersHandler(t *tarter.Tarter) http.HandlerFunc {
 	}
 }
 
-func GetRunnerWorkersCountHandler(t *tarter.Tarter) http.HandlerFunc {
+func GetRunnerWorkersCountHandler(t Workers) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := t.GetWorkersCount()
 		w.Header().Set("Content-Type", "application/json")
