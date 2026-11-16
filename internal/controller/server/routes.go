@@ -17,6 +17,8 @@
 package server
 
 import (
+	"net/http"
+
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/core/types"
 )
@@ -45,4 +47,10 @@ func SetupRunnersRoutes(r *core.Router, c ControllerInterface, origins string) {
 
 func SetupWatcherRoutes(r *core.Router, c ControllerInterface, origins string) {
 	r.HandleFunc("GET /ws/watch", WatcherHandler(c, origins))
+	r.HandleFunc("HEAD /ws/watch", getOnlyHandler)
+}
+
+func getOnlyHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Allow", http.MethodGet)
+	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 }

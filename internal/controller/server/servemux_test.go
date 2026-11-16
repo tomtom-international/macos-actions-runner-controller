@@ -90,3 +90,20 @@ func TestControllerAPIRoutesWrongMethod(t *testing.T) {
 		}
 	}
 }
+
+func TestHeadOnWatchNotAllowed(t *testing.T) {
+	f := &FakeController{}
+	srv := httptest.NewServer(NewServer(f, testOrigins))
+	defer srv.Close()
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodHead, srv.URL+"/ws/watch", http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := srv.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+	assert.Equal(t, http.MethodGet, resp.Header.Get("Allow"))
+	f.AssertExpectations(t)
+}
