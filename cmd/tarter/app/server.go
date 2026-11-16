@@ -29,7 +29,6 @@ import (
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/config"
-	coreApi "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -125,9 +124,7 @@ func NewTarter() (*tarter.Tarter, *mux.Router, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	r := mux.NewRouter()
-
-	coreApi.SetupGenericHandlers(r)
+	r := api.NewRouter()
 	api.SetupRoutes(r, t.StateManager)
 
 	// These routes are only for development purposes

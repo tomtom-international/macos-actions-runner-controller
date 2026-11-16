@@ -19,7 +19,14 @@ package api
 import (
 	"github.com/gorilla/mux"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api/handlers"
+	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 )
+
+func NewRouter() *mux.Router {
+	r := mux.NewRouter()
+	core.SetupGenericHandlers(r)
+	return r
+}
 
 func SetupRoutes(r *mux.Router, sm handlers.RunnerStore) {
 	r.HandleFunc("/runners", handlers.ListRunnersHandler(sm)).Methods("GET")
