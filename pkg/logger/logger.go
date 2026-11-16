@@ -79,6 +79,13 @@ func InitLogger(debugLog, logCaller, logStacktrace, jsonLog bool) error {
 	return nil
 }
 
+// SetLogger replaces the package logger and returns a function that restores the previous one.
+func SetLogger(l *zap.Logger) (restore func()) {
+	prev := log
+	log = l
+	return func() { log = prev }
+}
+
 func Errorf(format string, args ...interface{}) {
 	log.Error(fmt.Sprintf(format, args...))
 }
