@@ -59,15 +59,14 @@ func NewServer(controller ControllerInterface, origins string) http.Handler {
 }
 
 func NewHTTPServer(controller ControllerInterface, address net.IP, port, origins string) *http.Server {
-	return &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", address, port),
-		Handler: NewServer(controller, origins),
-		// To avoid Slowloris attacks and control websocket connections.
-		ReadTimeout:    2 * 60 * time.Second,
-		WriteTimeout:   1 * 60 * time.Second,
-		IdleTimeout:    120 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
+	// To avoid Slowloris attacks and control websocket connections.
+	return core.NewHTTPServer(
+		fmt.Sprintf("%s:%s", address, port),
+		core.Middleware(NewServer(controller, origins)),
+		2*60*time.Second,
+		1*60*time.Second,
+		120*time.Second,
+	)
 }
 
 func ListenAndServeControllerServer(

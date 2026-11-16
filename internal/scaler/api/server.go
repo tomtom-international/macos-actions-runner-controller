@@ -54,14 +54,13 @@ func NewServer(forecastService ForecastService, address net.IP, port string) *Se
 
 	server := &Server{
 		forecastService: forecastService,
-		server: &http.Server{
-			Addr:           fmt.Sprintf("%s:%s", address, port),
-			Handler:        mux,
-			ReadTimeout:    2 * 60 * time.Second,
-			WriteTimeout:   1 * 60 * time.Second,
-			IdleTimeout:    120 * time.Second,
-			MaxHeaderBytes: 1 << 20,
-		},
+		server: core.NewHTTPServer(
+			fmt.Sprintf("%s:%s", address, port),
+			core.Middleware(mux),
+			2*60*time.Second,
+			1*60*time.Second,
+			120*time.Second,
+		),
 	}
 
 	server.setupRoutes(mux)

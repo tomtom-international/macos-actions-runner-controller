@@ -147,12 +147,5 @@ func Run(r *core.Router, t *tarter.Tarter) error {
 }
 
 func newHTTPServer(port string, h http.Handler) *http.Server {
-	return &http.Server{
-		Addr:           fmt.Sprintf(":%s", port),
-		Handler:        h,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		IdleTimeout:    120 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
+	return core.NewHTTPServer(fmt.Sprintf(":%s", port), core.Middleware(h), 15*time.Second, 15*time.Second, 120*time.Second)
 }
