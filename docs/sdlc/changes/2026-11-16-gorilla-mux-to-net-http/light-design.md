@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16
 **Artifact:** light-design
-**Status:** Draft | Approved
+**Status:** Approved
 **Template version:** default/0.3.27
 
 **Plugin version:** 0.7.10
