@@ -19,21 +19,13 @@ package logger
 import (
 	"fmt"
 
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger/internal/current"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	log *zap.Logger
-)
-
-func init() {
-	log = zap.NewNop()
-}
-
 func InitLogger(debugLog, logCaller, logStacktrace, jsonLog bool) error {
 	var level zapcore.Level
-	var err error
 
 	conf := zap.Config{
 		Level:       zap.NewAtomicLevelAt(level),
@@ -72,42 +64,34 @@ func InitLogger(debugLog, logCaller, logStacktrace, jsonLog bool) error {
 	}
 	conf.Level = zap.NewAtomicLevelAt(level)
 
-	log, err = conf.Build()
+	l, err := conf.Build()
 	if err != nil {
 		return err
 	}
+	current.Logger.Store(l)
 	return nil
 }
 
-// SetLogger replaces the package logger and returns a function that restores the previous one.
-func SetLogger(l *zap.Logger) (restore func()) {
-	prev := log
-	log = l
-	return func() { log = prev }
-}
-
 func Errorf(format string, args ...interface{}) {
-	log.Error(fmt.Sprintf(format, args...))
+	current.Logger.Load().Error(fmt.Sprintf(format, args...))
 }
 
 func Infof(format string, args ...interface{}) {
-	log.Info(fmt.Sprintf(format, args...))
+	current.Logger.Load().Info(fmt.Sprintf(format, args...))
 }
 
 func Debugf(format string, args ...interface{}) {
-	log.Debug(fmt.Sprintf(format, args...))
+	current.Logger.Load().Debug(fmt.Sprintf(format, args...))
 }
 
 func Warnf(format string, args ...interface{}) {
-	log.Warn(fmt.Sprintf(format, args...))
+	current.Logger.Load().Warn(fmt.Sprintf(format, args...))
 }
 
 func Fatalf(format string, args ...interface{}) {
-	log.Fatal(fmt.Sprintf(format, args...))
+	current.Logger.Load().Fatal(fmt.Sprintf(format, args...))
 }
 
 func Sync() {
-	if log != nil {
-		_ = log.Sync()
-	}
+	_ = current.Logger.Load().Sync()
 }

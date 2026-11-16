@@ -27,18 +27,10 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
-	"go.uber.org/zap"
+	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger/loggertest"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
-
-func observeLogs(t *testing.T, level zapcore.Level) *observer.ObservedLogs {
-	t.Helper()
-	obsCore, logs := observer.New(level)
-	t.Cleanup(logger.SetLogger(zap.New(obsCore)))
-	return logs
-}
 
 func requestLogs(logs *observer.ObservedLogs, method, path string) []observer.LoggedEntry {
 	prefix := method + " " + path + " "
@@ -74,7 +66,7 @@ func TestNewHTTPServerFields(t *testing.T) {
 }
 
 func TestMiddlewareLogsRequestAtDebug(t *testing.T) {
-	logs := observeLogs(t, zapcore.DebugLevel)
+	logs := loggertest.Observe(t, zapcore.DebugLevel)
 	h := Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusCreated) }))
 
 	w := httptest.NewRecorder()
@@ -85,7 +77,7 @@ func TestMiddlewareLogsRequestAtDebug(t *testing.T) {
 }
 
 func TestMiddlewareLogsNothingAtInfo(t *testing.T) {
-	logs := observeLogs(t, zapcore.InfoLevel)
+	logs := loggertest.Observe(t, zapcore.InfoLevel)
 	h := Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusAccepted) }))
 
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/items", http.NoBody))
@@ -100,7 +92,7 @@ func TestMiddlewareLogsImplicitOK(t *testing.T) {
 	}
 	for path, handler := range cases {
 		t.Run(path, func(t *testing.T) {
-			logs := observeLogs(t, zapcore.DebugLevel)
+			logs := loggertest.Observe(t, zapcore.DebugLevel)
 
 			w := httptest.NewRecorder()
 			Middleware(handler).ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, http.NoBody))
@@ -112,7 +104,7 @@ func TestMiddlewareLogsImplicitOK(t *testing.T) {
 }
 
 func TestMiddlewareTurnsPanicInto500(t *testing.T) {
-	logs := observeLogs(t, zapcore.DebugLevel)
+	logs := loggertest.Observe(t, zapcore.DebugLevel)
 	h := Middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }))
 
 	w := httptest.NewRecorder()
@@ -124,7 +116,7 @@ func TestMiddlewareTurnsPanicInto500(t *testing.T) {
 }
 
 func TestMiddlewareRepanicsErrAbortHandler(t *testing.T) {
-	logs := observeLogs(t, zapcore.DebugLevel)
+	logs := loggertest.Observe(t, zapcore.DebugLevel)
 	h := Middleware(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic(http.ErrAbortHandler) }))
 
 	assert.PanicsWithValue(t, http.ErrAbortHandler, func() {
@@ -134,7 +126,7 @@ func TestMiddlewareRepanicsErrAbortHandler(t *testing.T) {
 }
 
 func TestMiddlewareAbortsOnPanicAfterHeadersWritten(t *testing.T) {
-	observeLogs(t, zapcore.DebugLevel)
+	loggertest.Observe(t, zapcore.DebugLevel)
 	h := Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		panic("late")
@@ -146,7 +138,7 @@ func TestMiddlewareAbortsOnPanicAfterHeadersWritten(t *testing.T) {
 }
 
 func TestMiddlewareWriterUnwrapsForResponseController(t *testing.T) {
-	observeLogs(t, zapcore.DebugLevel)
+	loggertest.Observe(t, zapcore.DebugLevel)
 	var flushErr error
 	h := Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		flushErr = http.NewResponseController(w).Flush()
@@ -160,7 +152,7 @@ func TestMiddlewareWriterUnwrapsForResponseController(t *testing.T) {
 }
 
 func TestMiddlewareKeepsWebsocketUpgrade(t *testing.T) {
-	logs := observeLogs(t, zapcore.DebugLevel)
+	logs := loggertest.Observe(t, zapcore.DebugLevel)
 	echo := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 		if err != nil {
