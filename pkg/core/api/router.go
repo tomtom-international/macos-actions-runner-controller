@@ -23,11 +23,21 @@ import (
 
 // Router is an http.ServeMux that matches the decoded, cleaned request path the way gorilla/mux did.
 type Router struct {
-	*http.ServeMux
+	mux *http.ServeMux
 }
 
 func NewRouter() *Router {
-	return &Router{ServeMux: http.NewServeMux()}
+	return &Router{mux: http.NewServeMux()}
+}
+
+// Handle registers the handler for the given pattern.
+func (r *Router) Handle(pattern string, handler http.Handler) {
+	r.mux.Handle(pattern, handler)
+}
+
+// HandleFunc registers the handler function for the given pattern.
+func (r *Router) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	r.mux.HandleFunc(pattern, handler)
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -42,7 +52,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	routed := *req
 	routed.URL = &decoded
-	r.ServeMux.ServeHTTP(w, &routed)
+	r.mux.ServeHTTP(w, &routed)
 }
 
 func cleanPath(p string) string {
