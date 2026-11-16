@@ -17,29 +17,26 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api/handlers"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 )
 
-func NewRouter() *mux.Router {
-	r := mux.NewRouter()
-	core.SetupGenericHandlers(r)
-	return r
+func NewRouter() *core.Router {
+	return core.NewRouter()
 }
 
-func SetupRoutes(r *mux.Router, sm handlers.RunnerStore) {
-	r.HandleFunc("/runners", handlers.ListRunnersHandler(sm)).Methods("GET")
-	r.HandleFunc("/runners/{id}", handlers.GetRunnerHandler(sm)).Methods("GET")
-	r.HandleFunc("/runners/{id}/stop", handlers.StopRunnerHandler(sm)).Methods("PUT")
+func SetupRoutes(r *core.Router, sm handlers.RunnerStore) {
+	r.HandleFunc("GET /runners", handlers.ListRunnersHandler(sm))
+	r.HandleFunc("GET /runners/{id}", handlers.GetRunnerHandler(sm))
+	r.HandleFunc("PUT /runners/{id}/stop", handlers.StopRunnerHandler(sm))
 }
 
-func SetupSysRoutes(r *mux.Router, t handlers.Workers) {
-	r.HandleFunc("/sys/workers", handlers.ListRunnerWorkersHandler(t)).Methods("GET")
-	r.HandleFunc("/sys/workers-count", handlers.GetRunnerWorkersCountHandler(t)).Methods("GET")
+func SetupSysRoutes(r *core.Router, t handlers.Workers) {
+	r.HandleFunc("GET /sys/workers", handlers.ListRunnerWorkersHandler(t))
+	r.HandleFunc("GET /sys/workers-count", handlers.GetRunnerWorkersCountHandler(t))
 }
 
-func SetupStandaloneTarterRoutes(r *mux.Router, t handlers.Standalone) {
-	r.HandleFunc("/sys/standalone/config", handlers.GetStandaloneConfigHandler(t)).Methods("GET")
-	r.HandleFunc("/sys/standalone/restart", handlers.RestartStandaloneRunnersHandler(t)).Methods("PUT")
+func SetupStandaloneTarterRoutes(r *core.Router, t handlers.Standalone) {
+	r.HandleFunc("GET /sys/standalone/config", handlers.GetStandaloneConfigHandler(t))
+	r.HandleFunc("PUT /sys/standalone/restart", handlers.RestartStandaloneRunnersHandler(t))
 }

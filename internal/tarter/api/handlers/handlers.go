@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	tt "github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/types"
 	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -70,8 +69,7 @@ func ListRunnersHandler(sm RunnerStore) http.HandlerFunc {
 func GetRunnerHandler(sm RunnerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		runnerID := utils.UID(vars["id"])
+		runnerID := utils.UID(r.PathValue("id"))
 		if runnerID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{
@@ -120,8 +118,7 @@ func GetRunnerHandler(sm RunnerStore) http.HandlerFunc {
 func StopRunnerHandler(sm RunnerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		runnerID := utils.UID(vars["id"])
+		runnerID := utils.UID(r.PathValue("id"))
 		if runnerID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			response := core.SimpleResponse{

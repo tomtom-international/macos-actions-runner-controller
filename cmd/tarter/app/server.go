@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/caarlos0/env"
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/api"
 	"github.com/tomtom-international/macos-actions-runner-controller/internal/tarter/config"
+	core "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/api"
 	coreVersion "github.com/tomtom-international/macos-actions-runner-controller/pkg/core/version"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/logger"
 	"github.com/tomtom-international/macos-actions-runner-controller/pkg/utils"
@@ -101,7 +101,7 @@ func NewTarterCommand() *cobra.Command {
 	return cmd
 }
 
-func NewTarter() (*tarter.Tarter, *mux.Router, error) {
+func NewTarter() (*tarter.Tarter, *core.Router, error) {
 	versionInfo := coreVersion.GetVersionInfo()
 	nodeName, err := utils.GetHostname()
 	if err != nil {
@@ -133,7 +133,7 @@ func NewTarter() (*tarter.Tarter, *mux.Router, error) {
 	return t, r, nil
 }
 
-func Run(r *mux.Router, t *tarter.Tarter) error {
+func Run(r *core.Router, t *tarter.Tarter) error {
 	defer logger.Sync()
 	switch {
 	case config.TarterMode(tarterConfig.Mode) == config.StandaloneMode:
