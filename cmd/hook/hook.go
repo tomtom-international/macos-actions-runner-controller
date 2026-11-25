@@ -20,9 +20,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand/v2"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -41,10 +43,42 @@ import (
 var (
 	cfg          hookConfig
 	runnerConfig types.RunnerConfig
-	githubClient *ghclient.Client
-	offlineCount = 0
-	checksPassed = 0
 )
+
+type runnerAPI interface {
+	GetRunnerByName(runnerName string) (*github.Runners, error)
+	RemoveRunner(runnerID int64) error
+}
+
+type loopExit int
+
+const (
+	exitFinished loopExit = iota
+	exitOfflineLimit
+	exitSignal
+)
+
+func (e loopExit) String() string {
+	switch e {
+	case exitFinished:
+		return "runner finished"
+	case exitOfflineLimit:
+		return "runner offline limit reached"
+	case exitSignal:
+		return "terminated by signal"
+	}
+	return fmt.Sprintf("loopExit(%d)", int(e))
+}
+
+type statusWatcher struct {
+	api            runnerAPI
+	name           string
+	backoff        backoffConfig
+	offlineLimit   int
+	finishedChecks int
+	offlineCount   int
+	checksPassed   int
+}
 
 // defaultBackoff provides sensible default settings
 var defaultBackoff = backoffConfig{
@@ -75,6 +109,7 @@ type hookConfig struct {
 	RunnerStatusCheckPeriod   int    `env:"RUNNER_STATUS_CHECK_PERIOD" envDefault:"60"`
 	RunnerFinishedChecksCount int    `env:"RUNNER_FINISHED_CHECKS_COUNT" envDefault:"1"`
 	RunnerOfflineChecksCount  int    `env:"RUNNER_OFFLINE_CHECKS_COUNT" envDefault:"15"`
+	RunnerDeregisterTimeout   int    `env:"RUNNER_DEREGISTER_TIMEOUT" envDefault:"15"`
 }
 
 // loadHookConfiguration loads the configuration from environment variables
@@ -97,21 +132,33 @@ func readRunnerConfig() {
 }
 
 // initGithubClient initializes the GitHub client with the provided configuration
-func initGithubClient() {
+func initGithubClient() *ghclient.Client {
 	ghConfig := ghclient.ClientConfig{
 		AppID:          int64(cfg.GhAppID),
 		InstallationID: int64(cfg.GhAppInstallationID),
 		PrivateKey:     []byte(cfg.GhAppPrivateKey),
 		Organization:   cfg.GhAppOrg,
 	}
-	var err error
-	githubClient, err = ghclient.New(ghConfig)
+	client, err := ghclient.New(ghConfig)
 	if err != nil {
 		log.Fatalf("Failed to create github client: %v", err)
 	}
+	return client
+}
+
+type hookDeps struct {
+	watcher       *statusWatcher
+	send          func(message string)
+	initialWait   time.Duration
+	checkInterval time.Duration
+	deregTimeout  time.Duration
 }
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// a second signal kills the process while deregistration runs
+	context.AfterFunc(ctx, stop)
+
 	info := coreVersion.GetVersionInfo()
 	log.Printf("Starting hook application\nVersion: %s\nDate: %s\nCommit SHA: %s\nPlatform: %s\n",
 		info.Version, info.BuildDate, info.GitCommit, info.Platform)
@@ -120,7 +167,7 @@ func main() {
 	readRunnerConfig()
 
 	log.Println("Initializing github client")
-	initGithubClient()
+	githubClient := initGithubClient()
 
 	log.Println("Extracting gha runner name")
 	ghaRunnerName, err := extractGhaName(cfg.GhaJITConfig)
@@ -141,70 +188,181 @@ func main() {
 		log.Fatalf("Failed to marshal runner config: %v", err)
 	}
 
-	sendMessageToSqs(string(message))
-	log.Println("Runner sent to sqs")
+	deps := hookDeps{
+		watcher: &statusWatcher{
+			api:            githubClient,
+			name:           ghaRunnerName,
+			backoff:        defaultBackoff,
+			offlineLimit:   cfg.RunnerOfflineChecksCount,
+			finishedChecks: cfg.RunnerFinishedChecksCount,
+		},
+		send: func(message string) {
+			sendMessageToSqs(message)
+			log.Println("Runner sent to sqs")
+		},
+		initialWait:   15 * time.Second,
+		checkInterval: time.Duration(cfg.RunnerStatusCheckPeriod) * time.Second,
+		deregTimeout:  time.Duration(cfg.RunnerDeregisterTimeout) * time.Second,
+	}
+	exit, err := run(ctx, deps, string(message))
+	stop()
+
+	switch {
+	case errors.Is(err, errRunnerBusy):
+		log.Printf("Runner %s is busy, skipped deregistration", ghaRunnerName)
+	case err != nil:
+		log.Printf("Failed to deregister runner %s: %v", ghaRunnerName, err)
+	}
+	log.Printf("Hook finished: %s", exit)
+	if code := exitCode(exit, err); code != 0 {
+		os.Exit(code)
+	}
+}
+
+func run(ctx context.Context, d hookDeps, message string) (loopExit, error) {
+	exit := sendAndWait(ctx, d, message)
+	if exit == exitFinished {
+		return exit, nil
+	}
+	log.Printf("Deregistering runner %s: %s", d.watcher.name, exit)
+	return exit, deregisterRunner(d.watcher.api, d.watcher.name, d.watcher.backoff, d.deregTimeout)
+}
+
+func sendAndWait(ctx context.Context, d hookDeps, message string) loopExit {
+	if ctx.Err() != nil {
+		log.Println("Terminated before the runner request was sent")
+		return exitSignal
+	}
+	d.send(message)
 
 	log.Println("Waiting for runner to finish")
-	time.Sleep(15 * time.Second)
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	interval := time.Duration(cfg.RunnerStatusCheckPeriod) * time.Second
-	ticker := time.NewTicker(interval)
-	defer func() {
-		stop()
-		ticker.Stop()
-	}()
+	select {
+	case <-ctx.Done():
+		return exitSignal
+	case <-time.After(d.initialWait):
+	}
+	return d.watcher.wait(ctx, d.checkInterval)
+}
 
-runnerStatusCheckLoop:
-	for checkStatus(ghaRunnerName) {
+func exitCode(exit loopExit, deregErr error) int {
+	if exit == exitSignal && deregErr != nil && !errors.Is(deregErr, errRunnerBusy) {
+		return 1
+	}
+	return 0
+}
+
+func (w *statusWatcher) wait(ctx context.Context, interval time.Duration) loopExit {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		if ctx.Err() != nil {
+			return exitSignal
+		}
+		if exit, done := w.check(ctx); done {
+			return exit
+		}
 		select {
 		case <-ctx.Done():
-			break runnerStatusCheckLoop
+			return exitSignal
 		case <-ticker.C:
 		}
 	}
-
-	log.Println("Hook finished")
 }
 
-// checkStatus checks the status of the GHA runner and returns true if the runner is online
-// and false if it is offline. It also increments the offline count and checks if it exceeds
-func checkStatus(ghaRunnerName string) bool {
+func (w *statusWatcher) check(ctx context.Context) (exit loopExit, done bool) {
 	var runners *github.Runners
-	var err error
-	// Use context with timeout for the entire operation
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	lookupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	err = withRetry(ctx, defaultBackoff, func() error {
-		runners, err = githubClient.GetRunnerByName(ghaRunnerName)
+	err := withRetry(lookupCtx, w.backoff, func() error {
+		var err error
+		runners, err = w.api.GetRunnerByName(w.name)
 		return err
 	})
-
 	if err != nil {
-		log.Printf("Failed to get runner %s from github after retries: %v", ghaRunnerName, err)
-		return true
+		if ctx.Err() != nil {
+			return exitSignal, true
+		}
+		log.Printf("Failed to get runner %s from github after retries: %v", w.name, err)
+		return 0, false
 	}
 
 	if len(runners.Runners) > 0 {
-		if *runners.Runners[0].Status == "online" {
-			log.Printf("Runner %s is active", ghaRunnerName)
-			return true
-		} else {
-			log.Printf("Runner %s is offline", ghaRunnerName)
-			offlineCount++
-			if offlineCount > cfg.RunnerOfflineChecksCount {
-				log.Printf("Runner %s failed to start in secifed interval", ghaRunnerName)
-				return false
-			}
-			return true
+		if runners.Runners[0].GetStatus() == "online" {
+			log.Printf("Runner %s is active", w.name)
+			return 0, false
 		}
+		log.Printf("Runner %s is offline", w.name)
+		w.offlineCount++
+		if w.offlineCount > w.offlineLimit {
+			log.Printf("Runner %s failed to start in secifed interval", w.name)
+			return exitOfflineLimit, true
+		}
+		return 0, false
 	}
-	if checksPassed < cfg.RunnerFinishedChecksCount {
-		checksPassed++
-		log.Printf("Runner %s finished.", ghaRunnerName)
-		return true
+	if w.checksPassed < w.finishedChecks {
+		w.checksPassed++
+		log.Printf("Runner %s finished.", w.name)
+		return 0, false
 	}
-	return false
+	return exitFinished, true
+}
+
+var errRunnerBusy = errors.New("runner is busy")
+
+func deregisterRunner(api runnerAPI, name string, backoff backoffConfig, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	result := make(chan error, 1)
+	go func() { result <- removeIdleRunner(ctx, api, name, backoff) }()
+
+	select {
+	case err := <-result:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func removeIdleRunner(ctx context.Context, api runnerAPI, name string, backoff backoffConfig) error {
+	var runners *github.Runners
+	err := withRetry(ctx, backoff, func() error {
+		var err error
+		runners, err = api.GetRunnerByName(name)
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("failed to look up runner %s: %w", name, err)
+	}
+	if len(runners.Runners) == 0 {
+		log.Printf("Runner %s is not registered on github", name)
+		return nil
+	}
+
+	runner := runners.Runners[0]
+	if runner.GetBusy() {
+		return errRunnerBusy
+	}
+	err = withRetry(ctx, backoff, func() error {
+		if removeErr := api.RemoveRunner(runner.GetID()); removeErr != nil && !hasStatus(removeErr, http.StatusNotFound) {
+			return removeErr
+		}
+		return nil
+	})
+	if hasStatus(err, http.StatusUnprocessableEntity) {
+		return errRunnerBusy
+	}
+	if err != nil {
+		return fmt.Errorf("failed to remove runner %s: %w", name, err)
+	}
+	log.Printf("Runner %s removed from github", name)
+	return nil
+}
+
+func hasStatus(err error, code int) bool {
+	var ghErr *github.ErrorResponse
+	return errors.As(err, &ghErr) && ghErr.Response != nil && ghErr.Response.StatusCode == code
 }
 
 // sendMessageToSqs sends a message to the SQS queue with runner configuration
@@ -269,10 +427,7 @@ func withRetry(ctx context.Context, backoffCfg backoffConfig, fn func() error) e
 			return nil
 		}
 
-		// Check if error is a GitHub rate limit error
-		if isRateLimitError(err) {
-			log.Printf("Hit GitHub rate limit, backing off: %v", err)
-		} else if !isRetryableError(err) {
+		if !shouldRetry(err) {
 			return err
 		}
 
@@ -297,6 +452,31 @@ func withRetry(ctx context.Context, backoffCfg backoffConfig, fn func() error) e
 			backoffInterval = backoffCfg.maxInterval
 		}
 	}
+}
+
+func shouldRetry(err error) bool {
+	if retry, known := classifyGitHubError(err); known {
+		return retry
+	}
+	if isRateLimitError(err) {
+		log.Printf("Hit GitHub rate limit, backing off: %v", err)
+		return true
+	}
+	return isRetryableError(err)
+}
+
+func classifyGitHubError(err error) (retry, known bool) {
+	var rateLimitErr *github.RateLimitError
+	var abuseErr *github.AbuseRateLimitError
+	if errors.As(err, &rateLimitErr) || errors.As(err, &abuseErr) {
+		return true, true
+	}
+	var respErr *github.ErrorResponse
+	if errors.As(err, &respErr) && respErr.Response != nil {
+		code := respErr.Response.StatusCode
+		return code == http.StatusTooManyRequests || code >= http.StatusInternalServerError, true
+	}
+	return false, false
 }
 
 // isRateLimitError checks if an error is a GitHub rate limit error
